@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prismserver-operator
+  namespace: prism-servers
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: prismserver-operator
+  template:
+    metadata:
+      labels:
+        app: prismserver-operator
+    spec:
+      containers:
+      - name: prismserver-operator
+        image: thisisnttheway/prism-hosting:latest

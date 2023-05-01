@@ -12,10 +12,6 @@ import uuid
 import os
 
 @kopf.on.startup()
-def get_uuid_part():
-    uuid = uuid.uuid4()
-    return str(uuid)[:8]
-
 def dyn_client_auth():
     """ensure the api authentication
     for the dynamic-client, piggibacked
@@ -57,9 +53,11 @@ def get_pod_body(name, namespace, customer, image, sub_start):
         sub_start (string): When subscription for started
     """
     
-    uuid_part = get_uuid_part()
-    full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
     obj_uuid = uuid.uuid4()
+    uuid_part = str(uuid)[:8]
+    uuid_full = str(obj_uuid)
+    
+    full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
     secret_name = "gslt-code"
     
     body = {
@@ -72,7 +70,7 @@ def get_pod_body(name, namespace, customer, image, sub_start):
                 'customer': customer,
                 'name': full_name,
                 'subscriptionStart': sub_start,
-                'objUuid': obj_uuid
+                'objUuid': uuid_full
             }
         },
         'spec': {

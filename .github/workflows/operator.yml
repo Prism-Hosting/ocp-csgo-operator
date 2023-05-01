@@ -54,9 +54,7 @@ jobs:
         oc: latest
 
     - name: Login to cluster
-      env:
-        OPENSHIFT_NAMESPACE: prism-servers
       run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token='${{ secrets.OPENSHIFT_SA_TOKEN }}' --insecure_skip_tls_verify=true
 
     - name: Scale down operator deployment
-      run: oc -n ${{ env.OPENSHIFT_PRISM_NAMESPACE }} delete $(oc -n ${{ env.OPENSHIFT_PRISM_NAMESPACE }} get po -o name | grep operator)
+      run: oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} delete $(oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} get po -o name | grep operator)

@@ -18,3 +18,4 @@ spec:
       containers:
       - name: prismserver-operator
         image: thisisnttheway/prism-hosting:latest
+        imagePullPolicy: Always

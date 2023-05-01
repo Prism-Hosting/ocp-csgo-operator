@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Operator CI/CD
 
 on:
   push:
@@ -42,3 +42,25 @@ jobs:
         context: .
         push: true
         tags: ${{ steps.meta.outputs.tags }}
+  
+  update_operator:
+    runs-on: self-hosted
+
+      steps:
+      - name: Login to cluster
+        uses: redhat-actions/oc-login@v1
+        env:
+          OPENSHIFT_NAMESPACE: prism-servers
+
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_SA_TOKEN }}
+
+          insecure_skip_tls_verify: true
+
+          namespace: ${{ env.OPENSHIFT_NAMESPACE }}
+
+      - name: Scale down operator deployment
+        run: |
+          oc -n ${{ env.OPENSHIFT_NAMESPACE }} delete $(oc -n ${{ env.OPENSHIFT_NAMESPACE }} get po -o name | grep operator)
+          

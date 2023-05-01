@@ -52,7 +52,7 @@ jobs:
       env:
         OPENSHIFT_NAMESPACE: prism-servers
       run: |
-        oc login ${{ secrets.OPENSHIFT_SERVER }} --token='${{ secrets.OPENSHIFT_SA_TOKEN }}'' --insecure_skip_tls_verify=true
+        oc login ${{ secrets.OPENSHIFT_SERVER }} --token='${{ secrets.OPENSHIFT_SA_TOKEN }}' --insecure_skip_tls_verify=true
 
     - name: Scale down operator deployment
       run: |

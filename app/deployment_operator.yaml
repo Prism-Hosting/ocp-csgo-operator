@@ -17,4 +17,4 @@ spec:
     spec:
       containers:
       - name: prismserver-operator
-        image: thisisnttheway/prism-hosting:main
+        image: thisisnttheway/prism-hosting:latest

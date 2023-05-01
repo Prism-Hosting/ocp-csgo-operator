@@ -1,4 +1,8 @@
-FROM python:3.10-bullseye
+FROM ubuntu:23.04
+
+# Environment
+RUN apt-get update && apt-get install \
+  -y --no-install-recommends python3 python3-virtualenv
 
 ENV APP_ROOT=/opt
 ENV VIRTUAL_ENV=/opt/venv

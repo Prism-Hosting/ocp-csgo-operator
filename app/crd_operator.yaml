@@ -15,16 +15,18 @@ spec:
     storage: true
     schema:
       openAPIV3Schema:
-        spec:
-          type: object
-          x-kubernetes-preserve-unknown-fields: true
-          properties:
-            customer:
-              type: string
-            image:
-              type: string
-            subscriptionStart:
-              type: timestamp
-        status:
-          type: object
-          x-kubernetes-preserve-unknown-fields: true
+        type: object
+        properties:
+          spec:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+            properties:
+              customer:
+                type: string
+              image:
+                type: string
+              subscriptionStart:
+                type: string
+          status:
+            type: object
+            x-kubernetes-preserve-unknown-fields: true

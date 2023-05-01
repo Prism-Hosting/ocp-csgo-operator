@@ -28,10 +28,11 @@ jobs:
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-      tags: |
-        # set latest tag for default branch
-        type=raw,value=latest,enable={{is_default_branch}}
-        type=ref,event=branch
+      with:
+        tags: |
+          # set latest tag for default branch
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=ref,event=branch
         
     - name: Build and push Docker image
       uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4

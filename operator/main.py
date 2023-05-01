@@ -9,13 +9,22 @@ import kopf
 from openshift.dynamic import DynamicClient
 from kubernetes import client, config
 import uuid
+import random
 import os
+
+def allocate_random_port():
+    """
+    Allocate a random port to be used by a k8s service
+    """
+    
+    # TODO: Get current ports, generate port, return if non-existent or retry ad infinitum.
+    return random.randint(20000, 50000)
 
 @kopf.on.startup()
 def dyn_client_auth():
-    """ensure the api authentication
-    for the dynamic-client, piggibacked
-    on kopf"""
+    """
+    Authenticate dynamic client
+    """
     config.load_incluster_config()
     k8s_config = client.Configuration()
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
@@ -31,8 +40,9 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
 def create_server(dyn_client, logger, name, namespace, customer, image, sub_start):
     """Create the velero.io/schedule object"""
     
+    # TODO REWRITE
     v1_server = dyn_client.resources.get(api_version='velero.io/v1', kind='Pod')
-    body = get_pod_body(name, namespace, customer, image, sub_start)
+    body = get_deployment_body(name, namespace, customer, image, sub_start)
 
     # Create the above schedule resource
     try:
@@ -43,59 +53,162 @@ def create_server(dyn_client, logger, name, namespace, customer, image, sub_star
 
     return pod
 
-def get_pod_body(name, namespace, customer, image, sub_start):
-    """ return pod resource body
+def get_resources(name, namespace, customer, image, sub_start):
+    """ Creates an array of kubernetes resources (Deployment, service) for further use
 
     Args:
-        name (string): _description_
-        namespace (string): Which namespace
-        customer (string): Which customer
-        sub_start (string): When subscription for started
+        name (string): Name of server
+        namespace (string): Namespace
+        customer (string): Customer
+        image (string): Image to use
+        sub_start (string): DateTime of subscription start
+
+
+    Returns:
+        array: Array of resource objects
     """
     
-    obj_uuid = uuid.uuid4()
-    uuid_part = str(uuid)[:8]
-    uuid_full = str(obj_uuid)
+    str_uuid = str(uuid.uuid4())
+    uuid_part = str_uuid[:8]
+    
+    full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
+    
+    labels = {
+        'customer': customer,
+        'name': full_name,
+        'subscriptionStart': sub_start,
+        'custObjUuid': str_uuid
+    }
+    
+    try:
+        resources = []
+        resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels))
+    except Exception as e:
+        raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
+    
+    return resources
+
+def get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels):
+    """ return deployment resource body
+
+    Args:
+        str_uuid (string): UUID as string
+        name (string): Name of server
+        namespace (string): Which namespace
+        image (string): Which image
+        customer (string): Which customer
+        sub_start (string): When subscription has started
+        labels (dict): Labels
+    """
+    
+    uuid_part = str_uuid[:8]
     
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
     secret_name = "gslt-code"
     
     body = {
         'apiVersion': 'v1',
-        'kind': 'Pod',
+        'kind': 'Deployment',
         'metadata': {
             'name': full_name,
             'namespace': namespace,
-            'labels': {
-                'customer': customer,
-                'name': full_name,
-                'subscriptionStart': sub_start,
-                'objUuid': uuid_full
-            }
+            'labels': labels
         },
         'spec': {
-            "containers": [
-                {
-                    "name": full_name,
-                    "image": image,
-                    'ports': [ {'containerPort': 27015 } ],
-                    'env': [
+            "selector": {
+                "matchLabels": {
+                    'customer': customer,
+                    "name": full_name                    
+                }              
+            },
+            "template": {
+                "metadata": {
+                    "labels": {
+                        'customer': customer,
+                        'name': full_name,
+                        'subscriptionStart': sub_start,
+                        'custObjUuid': str_uuid
+                    }
+                },
+                "spec": {
+                    "containers": [
                         {
-                            "name": "CSGO_GSLT",
-                            "valueFrom": {
-                                "secretKeyRef": {
-                                    "name": secret_name,
-                                    "key": "value"
+                            "name": full_name,
+                            "image": image,
+                            'ports': [ {'containerPort': 27015 } ],
+                            'env': [
+                                {
+                                    "name": "CSGO_GSLT",
+                                    "valueFrom": {
+                                        "secretKeyRef": {
+                                            "name": secret_name,
+                                            "key": "value"
+                                        }
+                                    } 
                                 }
-                            } 
+                            ]
                         }
                     ]
                 }
-            ]
+            }
         }
     }
     
     return body
+
+def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
+    """ Generate service resource
+
+    Args:
+        str_uuid (string): UUID as string
+        name (string): Name of server
+        namespace (string): Which namespace
+        customer (string): Which customer
+        sub_start (int): When subscription for started
+        labels (dict): Labels
+    """
+    
+    uuid_part = str_uuid[:8]
+    full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
+    
+    dyn_port = str(allocate_random_port())
+    
+    # !!!!!!!!!!!!!!!!!
+    # TODO: Dynamic port allocation
+    # !!!!!!!!!!!!!!!!!
+    
+    body = {
+        'apiVersion': 'v1',
+        'kind': 'Service',
+        'metadata': {
+            'name': f"service-{full_name}",
+            'namespace': namespace,
+            'labels': labels 
+        },
+        'spec': {
+            "selector": {
+                'custObjUuid': str_uuid
+            },
+            "ports": [
+                {
+                    "name": "ingress-tcp",
+                    "port": 27015,
+                    "protocol": "TCP",
+                    "targetPort": dyn_port
+                },
+                {
+                    "name": "ingress-udp",
+                    "port": 27015,
+                    "protocol": "UDP",
+                    "targetPort": dyn_port
+                },
+            ],
+            "type": "LoadBalancer"
+        }
+    }
+            
+    return body
+    
 
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create_fn(spec, meta, logger, **kwargs):

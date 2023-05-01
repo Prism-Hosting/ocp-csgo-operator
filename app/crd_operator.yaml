@@ -26,7 +26,7 @@ spec:
               image:
                 type: string
               subscriptionStart:
-                type: string
+                type: integer
           status:
             type: object
             x-kubernetes-preserve-unknown-fields: true

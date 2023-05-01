@@ -21,16 +21,6 @@ def allocate_random_port():
     return random.randint(20000, 50000)
 
 @kopf.on.startup()
-def dyn_client_auth():
-    """
-    Authenticate dynamic client
-    """
-    config.load_incluster_config()
-    k8s_config = client.Configuration()
-    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-    return DynamicClient(k8s_client)
-
-
 def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     settings.posting.level = logging.ERROR
     settings.persistence.finalizer = 'prism-server-operator.prism-hosting.ch/kopf-finalizer'
@@ -38,20 +28,26 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     logger.info("Operator startup succeeded!")
 
 def create_server(dyn_client, logger, name, namespace, customer, image, sub_start):
-    """Create the velero.io/schedule object"""
+    """
+    Create the server
+    """
+    
+    print(f"Creating a resource in {namespace}")
     
     # TODO REWRITE
     v1_server = dyn_client.resources.get(api_version='velero.io/v1', kind='Pod')
-    body = get_deployment_body(name, namespace, customer, image, sub_start)
+    bodies = get_resources(name, namespace, customer, image, sub_start)
 
     # Create the above schedule resource
     try:
-        pod = v1_server.create(body=body, namespace=namespace)
+        for body in bodies:
+            print(f"> Creating: {body.kind}: {body.metadata.name} (UUID: {body.metadata.labels.custObjUuid})")
+            return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as err:
-        logger.error(f"Creating server {namespace}-{name} failed with error: {err}")
-        raise kopf.TemporaryError(f"Creating the server {namespace}-{name} in namespace {namespace} failed")
-
-    return pod
+        logger.error(f" > Resource creation has failed {err}")
+        raise kopf.TemporaryError(f"Resource creation has failed {err}")
+    
+    return return_object
 
 def get_resources(name, namespace, customer, image, sub_start):
     """ Creates an array of kubernetes resources (Deployment, service) for further use
@@ -83,6 +79,7 @@ def get_resources(name, namespace, customer, image, sub_start):
     try:
         resources = []
         resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels))
+        resources.append(get_service_body(str_uuid, name, namespace, customer, sub_start, labels))
     except Exception as e:
         raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
     
@@ -208,11 +205,23 @@ def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
     }
             
     return body
+
+def dyn_client_auth():
+    """
+    Authenticate dynamic client
+    """
     
+    config.load_incluster_config()
+    k8s_config = client.Configuration()
+    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+    
+    return DynamicClient(k8s_client)
 
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create_fn(spec, meta, logger, **kwargs):
     """resource create handler"""
+
+    print("A resource is being created...")
 
     # Get resource metadata
     name = meta.get('name')
@@ -231,14 +240,14 @@ def create_fn(spec, meta, logger, **kwargs):
     if not sub_start:
         raise kopf.PermanentError(f"sub_start must be set. Got {sub_start!r}.")
 
-
     # authenticate against the cluster
+    print("Doing logon for resource creation...")
     dyn_client = dyn_client_auth()
 
     # Create server
     obj = create_server(dyn_client, logger, name, namespace, image, sub_start)
 
-    logger.info(f"PRISM Server created: {obj}")
+    logger.info("PRISM server created.")
 
     return {'server-name': obj.metadata.name, 'namespace': namespace, 'message': 'successfully created', 'time': f"{datetime.utcnow()}"}
 

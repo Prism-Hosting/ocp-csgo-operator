@@ -7,19 +7,17 @@ on:
     branches: [ "main", "test" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
-    steps:
+    steps: 
     - uses: actions/checkout@v3
-    
+
     - name: Login to DockerHub
       uses: docker/login-action@v2.1.0
       with:
         username: ${{ secrets.DOCKER_HUB_USER }}
-        password: ${{ secrets.DOCKER_HUB_LOGIN }}
+        password: ${{ secrets.DOCKER_HUB_PASS }}
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta

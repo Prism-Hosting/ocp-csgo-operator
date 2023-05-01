@@ -33,7 +33,7 @@ jobs:
         images: thisisnttheway/prism-hosting
         tags: |
           # set latest tag for default branch
-          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=latest
           type=ref,event=branch
         
     - name: Build and push Docker image

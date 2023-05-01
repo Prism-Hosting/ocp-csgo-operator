@@ -11,6 +11,7 @@ on:
     paths:
       - 'Dockerfile'
       - 'operator/**'
+  workflow_dispatch:
 
 jobs:
   build:

@@ -103,53 +103,7 @@ def get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, l
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
     secret_name = "gslt-code"
     
-    body = {
-        'apiVersion': 'v1',
-        'kind': 'Deployment',
-        'metadata': {
-            'name': full_name,
-            'namespace': namespace,
-            'labels': labels
-        },
-        'spec': {
-            "selector": {
-                "matchLabels": {
-                    'customer': customer,
-                    "name": full_name                    
-                }              
-            },
-            "template": {
-                "metadata": {
-                    "labels": {
-                        'customer': customer,
-                        'name': full_name,
-                        'subscriptionStart': sub_start,
-                        'custObjUuid': str_uuid
-                    }
-                },
-                "spec": {
-                    "containers": [
-                        {
-                            "name": full_name,
-                            "image": image,
-                            'ports': [ {'containerPort': 27015 } ],
-                            'env': [
-                                {
-                                    "name": "CSGO_GSLT",
-                                    "valueFrom": {
-                                        "secretKeyRef": {
-                                            "name": secret_name,
-                                            "key": "value"
-                                        }
-                                    } 
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        }
-    }
+    # Todo: Import yaml and do things with it
     
     return body
 
@@ -167,6 +121,7 @@ def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
     
     uuid_part = str_uuid[:8]
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
+    full_name = f"service-{full_name}"
     
     dyn_port = str(allocate_random_port())
     
@@ -174,36 +129,8 @@ def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
     # TODO: Dynamic port allocation
     # !!!!!!!!!!!!!!!!!
     
-    body = {
-        'apiVersion': 'v1',
-        'kind': 'Service',
-        'metadata': {
-            'name': f"service-{full_name}",
-            'namespace': namespace,
-            'labels': labels 
-        },
-        'spec': {
-            "selector": {
-                'custObjUuid': str_uuid
-            },
-            "ports": [
-                {
-                    "name": "ingress-tcp",
-                    "port": 27015,
-                    "protocol": "TCP",
-                    "targetPort": dyn_port
-                },
-                {
-                    "name": "ingress-udp",
-                    "port": 27015,
-                    "protocol": "UDP",
-                    "targetPort": dyn_port
-                },
-            ],
-            "type": "LoadBalancer"
-        }
-    }
-            
+    # Todo: Import yaml and do things with it
+
     return body
 
 def dyn_client_auth():
@@ -238,7 +165,9 @@ def create_fn(spec, meta, logger, **kwargs):
     if not image:
         raise kopf.PermanentError(f"image must be set. Got {image!r}.")
     if not sub_start:
-        raise kopf.PermanentError(f"sub_start must be set. Got {sub_start!r}.")
+        print(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
+        sub_start = str(int(datetime.now().timestamp()))
+        print(f("> subscriptionStart will now be: {sub_start}"))
 
     # authenticate against the cluster
     print("Doing logon for resource creation...")

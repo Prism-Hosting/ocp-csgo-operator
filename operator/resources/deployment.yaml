@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Deployment
+metadata: 
+  name: "{full_name}"
+  namespace: "{namespace}"
+  labels: "{labels}"
+spec: 
+  selector: 
+    matchLabels: 
+      customer: "{customer}"
+      name: "{full_name}"
+    template: 
+      metadata: 
+        labels: 
+          customer: "{customer}"
+          name: "{full_name}"
+          subscriptionStart: "{sub_start}"
+          custObjUuid: "{str_uuid}"
+        spec: 
+          containers:
+            - name: "{full_name}"
+              image: "{image}"
+              ports: 
+                - containerPort: 27015
+              env:
+                - name: CSGO_GSLT
+                  valueFrom: 
+                      secretKeyRef: 
+                          name: "{secret_name}"
+                          key: value
+

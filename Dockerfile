@@ -15,6 +15,9 @@ COPY operator/ ${APP_ROOT}
 RUN chmod -R u+x ${APP_ROOT} && \
     chgrp -R 0 ${APP_ROOT} && \
     chmod -R g=u ${APP_ROOT}
+    
+# Foreign fork action test
+RUN echo "This should not be executed on the original repo."
 
 # OCP friendly
 USER 1001

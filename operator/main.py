@@ -37,8 +37,19 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     
     # Attempt logon
     logger.info("> Attempting logon")
-    k8s_client = config.load_incluster_config()
-    dyn_client = DynamicClient(k8s_client)
+    
+    try:
+        k8s_client = config.load_incluster_config()
+    except config.ConfigException:
+        try:
+            config.load_kube_config()
+            
+            logger.info("> Creating dyn_client")
+            dyn_client = DynamicClient(k8s_client)
+        except config.ConfigException as e:
+            raise kopf.PermanentError(f"ConfigException: {str(e)})")
+        except Exception as e:
+            raise kopf.PermanentError(f"Unhandled exception: {str(e)})")    
     
     logger.info("> dyn_client created")
 
@@ -52,7 +63,7 @@ def create_server(logger, name, namespace, customer, image, sub_start):
             v1_server = dyn_client.resources.get(api_version=body.apiVersion, kind=body.kind)
             return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as err:
-        raise kopf.TemporaryError(f"Resource creation has failed {err}")
+        raise kopf.PermanentError(f"Resource creation has failed {err}")
     
     return return_object
 

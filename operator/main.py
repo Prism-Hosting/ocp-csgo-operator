@@ -58,9 +58,10 @@ def create_server(logger, name, namespace, customer, image, sub_start):
         bodies = get_resources(logger, name, namespace, customer, image, sub_start)
     
         for body in bodies:
-            logger.info(f"> Creating: {body.kind}: {body.metadata.name} (UUID: {body.metadata.labels.custObjUuid})")
+            logger.info(f"> Getting v1_server...")
+            v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
             
-            v1_server = dyn_client.resources.get(api_version=body.apiVersion, kind=body.kind)
+            logger.info(f"> Publishing resource...")
             return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as err:
         raise kopf.PermanentError(f"Resource creation has failed: {err}")

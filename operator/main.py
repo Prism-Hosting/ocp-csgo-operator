@@ -6,8 +6,8 @@ Operator to create and manage CS:GO servers.
 import datetime
 import logging
 import kopf
-from openshift.dynamic import DynamicClient
 from kubernetes import client, config
+from openshift.dynamic import DynamicClient
 import uuid
 import random
 import yaml
@@ -28,15 +28,19 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     
     logger.info("Operator startup succeeded!")
 
-def create_server(dyn_client, logger, name, namespace, customer, image, sub_start):
+def create_server(logger, name, namespace, customer, image, sub_start):
     """
     Create the server
     """
     
     logger.info(f"Creating a resource in {namespace}")
     
-    # TODO REWRITE
-    v1_server = dyn_client.resources.get(api_version='velero.io/v1', kind='Pod')
+    # Attempt logon
+    logger.info("> Attempting logon")
+    k8s_client = config.load_incluster_config()
+    dyn_client = DynamicClient(k8s_client)
+    
+    logger.info("> dyn_client created")
 
     # Create the above schedule resource
     try:
@@ -44,6 +48,8 @@ def create_server(dyn_client, logger, name, namespace, customer, image, sub_star
     
         for body in bodies:
             logger.info(f"> Creating: {body.kind}: {body.metadata.name} (UUID: {body.metadata.labels.custObjUuid})")
+            
+            v1_server = dyn_client.resources.get(api_version=body.apiVersion, kind=body.kind)
             return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as err:
         raise kopf.TemporaryError(f"Resource creation has failed {err}")
@@ -166,23 +172,6 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
 
     return body
 
-def dyn_client_auth(logger):
-    """
-    Authenticate dynamic client
-    """
-    
-    logger.info("> Loading incluster config...")
-    config.load_incluster_config()
-    
-    logger.info("> Loading k8s config...")
-    k8s_config = client.Configuration()
-    
-    logger.info("> Loading incluster client...")
-    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-    
-    logger.info("> Returning...")
-    return DynamicClient(k8s_client)
-
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create_fn(spec, meta, logger, **kwargs):
     """resource create handler"""
@@ -210,10 +199,10 @@ def create_fn(spec, meta, logger, **kwargs):
 
     # authenticate against the cluster
     logger.info("Doing logon for resource creation...")
-    dyn_client = dyn_client_auth(logger)
 
     # Create server
-    obj = create_server(dyn_client, logger, name, namespace, image, sub_start)
+    logger.info("Calling 'create_server'...")
+    obj = create_server(logger, name, namespace, image, sub_start)
 
     logger.info("PRISM server created.")
 

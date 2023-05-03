@@ -134,6 +134,8 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labe
                 namespace=namespace,
                 labels=labels,
                 customer=customer,
+                sub_start=labels["subscriptionStart"],
+                str_uuid=labels["custObjUuid"],
                 image=image,
                 secret_name=secret_name
             )
@@ -171,6 +173,9 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
         body = yaml.safe_load(
             tmp_yaml.format(
                 full_name=full_name,
+                customer=customer,
+                sub_start=labels["subscriptionStart"],
+                str_uuid=labels["custObjUuid"],
                 namespace=namespace,
                 labels=labels,
                 dyn_port=dyn_port,

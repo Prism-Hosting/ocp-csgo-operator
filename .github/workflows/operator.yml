@@ -15,7 +15,8 @@ on:
 
 jobs:
   build:
-    uses: Prism-Hosting/git-runner-builder-image/.github/workflows/docker-build.yml@main
+    uses: Prism-Hosting/git-workflows/.github/workflows/docker-build.yml@main
+    secrets: inherit
 
   update_operator:
     runs-on: self-hosted

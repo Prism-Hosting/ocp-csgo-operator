@@ -56,5 +56,5 @@ jobs:
     - name: Login to cluster
       run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token='${{ secrets.OPENSHIFT_SA_TOKEN }}' --insecure_skip_tls_verify=true
 
-    - name: Scale down operator deployment
+    - name: Remove operator pods
       run: oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} delete $(oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} get po -o name | grep operator)

@@ -38,6 +38,8 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     # Attempt logon
     logger.info("> Attempting logon")
     
+    global dyn_client
+    
     try:
         k8s_client = config.load_incluster_config()
     except config.ConfigException:
@@ -57,6 +59,7 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     try:
         bodies = get_resources(logger, name, namespace, customer, image, sub_start)
     
+        logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:
             logger.info(f"> Getting v1_server...")
             v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])

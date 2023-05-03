@@ -37,8 +37,13 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     
     # Attempt logon
     logger.info("> Attempting logon")
-    k8s_client = config.load_incluster_config()
-    dyn_client = DynamicClient(k8s_client)
+    try:
+        config.load_incluster_config()
+        k8s_config = client.Configuration()
+        k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+        dyn_client = DynamicClient(k8s_client)       
+    except Exception as e:
+        raise kopf.PermanentError(f"Failed to create dynamic client: {str(e)}")
     
     logger.info("> dynamic client created")
 
@@ -55,8 +60,8 @@ def create_server(logger, name, namespace, customer, image, sub_start):
             
             logger.info(f"> Publishing resource...")
             return_object = v1_server.create(body=body, namespace=namespace)
-    except Exception as err:
-        raise kopf.PermanentError(f"Resource creation has failed: {err}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Resource creation has failed: {str(e)}")
     
     return return_object
 

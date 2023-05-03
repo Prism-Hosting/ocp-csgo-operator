@@ -63,7 +63,7 @@ def create_server(logger, name, namespace, customer, image, sub_start):
             v1_server = dyn_client.resources.get(api_version=body.apiVersion, kind=body.kind)
             return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as err:
-        raise kopf.PermanentError(f"Resource creation has failed {err}")
+        raise kopf.PermanentError(f"Resource creation has failed: {err}")
     
     return return_object
 
@@ -99,7 +99,7 @@ def get_resources(logger, name, namespace, customer, image, sub_start):
         resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels))
         resources.append(get_service_body(logger, str_uuid, name, namespace, customer, labels))
     except Exception as e:
-        raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
+        raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")
     
     return resources
 
@@ -124,7 +124,7 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labe
     # Todo: Import yaml and do things with it
     try:
         logger.info("Attempting to load deployment yaml...")
-        path = os.path.join(os.path.dirname("resources"), 'deployment.yaml')
+        path = os.path.join(os.path.dirname("resources/"), 'deployment.yaml')
         tmp_yaml = open(path, 'rt').read()
         
         logger.info("> Attempting to populate deployment yaml...")
@@ -164,7 +164,7 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
     
     try:
         logger.info("Attempting to load service yaml...")
-        path = os.path.join(os.path.dirname("resources"), 'service.yaml')
+        path = os.path.join(os.path.dirname("resources/"), 'service.yaml')
         tmp_yaml = open(path, 'rt').read()
         
         logger.info("> Attempting to populate service yaml...")

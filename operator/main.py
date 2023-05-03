@@ -37,23 +37,8 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     
     # Attempt logon
     logger.info("> Attempting logon")
-    
-    dyn_client = "hehehaa"
-    
-    try:
-        k8s_client = config.load_incluster_config()
-    except config.ConfigException:
-        try:
-            config.load_kube_config()
-            
-            logger.info("> Creating dynamic client...")
-            dyn_client = DynamicClient(k8s_client)
-        
-        #except config.ConfigException as e:
-        #    raise kopf.PermanentError(f"ConfigException: {str(e)})")
-        
-        except Exception as e:
-            raise kopf.PermanentError(f"Unhandled exception: {str(e)})")    
+    k8s_client = config.load_incluster_config()
+    dyn_client = DynamicClient(k8s_client)
     
     logger.info("> dynamic client created")
 

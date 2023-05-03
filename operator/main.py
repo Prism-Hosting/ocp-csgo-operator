@@ -79,8 +79,8 @@ def get_resources(logger, name, namespace, customer, image, sub_start):
     
     try:
         resources = []
-        resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, labels))
-        resources.append(get_service_body(str_uuid, name, namespace, customer, labels))
+        resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels))
+        resources.append(get_service_body(logger, str_uuid, name, namespace, customer, labels))
     except Exception as e:
         raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
     
@@ -128,7 +128,7 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labe
     
     return body
 
-def get_service_body(str_uuid, name, namespace, customer, labels):
+def get_service_body(logger, str_uuid, name, namespace, customer, labels):
     """ Generate service resource
 
     Args:

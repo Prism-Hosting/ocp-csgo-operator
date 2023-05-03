@@ -38,10 +38,11 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     # Attempt logon
     logger.info("> Attempting logon")
     try:
-        config.load_incluster_config()
-        k8s_config = client.Configuration()
-        k8s_client = client.api_client.ApiClient(configuration=k8s_config)
-        dyn_client = DynamicClient(k8s_client)       
+        kubernetes.config.load_incluster_config()
+        k8s_client = kubernetes.client.ApiClient()
+        dyn_client = DynamicClient(k8s_client)
+
+
     except Exception as e:
         raise kopf.PermanentError(f"Failed to create dynamic client: {str(e)}")
     

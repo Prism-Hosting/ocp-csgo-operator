@@ -1,7 +1,7 @@
 apiVersion: prism-hosting.ch/v1
 kind: PrismServer
 metadata:
-  name: prismserver-test-obj
+  name: prismserver-test-2
   namespace: prism-servers
 spec:
   customer: cust-01
@@ -10,5 +10,5 @@ spec:
   image: timche/csgo
   # [string] Docker image
 
-  subscriptionStart: 1683139792
+  subscriptionStart: 1683139791
   # [string] UNIX timestamp

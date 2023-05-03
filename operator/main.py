@@ -38,7 +38,7 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     # Attempt logon
     logger.info("> Attempting logon")
     
-    global dyn_client
+    dyn_client = "hehehaa"
     
     try:
         k8s_client = config.load_incluster_config()
@@ -46,14 +46,16 @@ def create_server(logger, name, namespace, customer, image, sub_start):
         try:
             config.load_kube_config()
             
-            logger.info("> Creating dyn_client")
+            logger.info("> Creating dynamic client...")
             dyn_client = DynamicClient(k8s_client)
-        except config.ConfigException as e:
-            raise kopf.PermanentError(f"ConfigException: {str(e)})")
+        
+        #except config.ConfigException as e:
+        #    raise kopf.PermanentError(f"ConfigException: {str(e)})")
+        
         except Exception as e:
             raise kopf.PermanentError(f"Unhandled exception: {str(e)})")    
     
-    logger.info("> dyn_client created")
+    logger.info("> dynamic client created")
 
     # Create the above schedule resource
     try:
@@ -62,6 +64,8 @@ def create_server(logger, name, namespace, customer, image, sub_start):
         logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:
             logger.info(f"> Getting v1_server...")
+            
+            # BREAKS HERE (Handler 'create_fn' failed permanently: Resource creation has failed: name 'dyn_client' is not defined)
             v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
             
             logger.info(f"> Publishing resource...")

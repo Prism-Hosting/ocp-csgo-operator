@@ -10,6 +10,7 @@ from openshift.dynamic import DynamicClient
 from kubernetes import client, config
 import uuid
 import random
+import yaml
 import os
 
 def allocate_random_port():
@@ -78,14 +79,14 @@ def get_resources(name, namespace, customer, image, sub_start):
     
     try:
         resources = []
-        resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels))
-        resources.append(get_service_body(str_uuid, name, namespace, customer, sub_start, labels))
+        resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, labels))
+        resources.append(get_service_body(str_uuid, name, namespace, customer, labels))
     except Exception as e:
         raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
     
     return resources
 
-def get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels):
+def get_deployment_body(str_uuid, name, namespace, customer, image, labels):
     """ return deployment resource body
 
     Args:
@@ -103,57 +104,31 @@ def get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, l
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
     secret_name = "gslt-code"
     
-    body = {
-        'apiVersion': 'v1',
-        'kind': 'Deployment',
-        'metadata': {
-            'name': full_name,
-            'namespace': namespace,
-            'labels': labels
-        },
-        'spec': {
-            "selector": {
-                "matchLabels": {
-                    'customer': customer,
-                    "name": full_name                    
-                }              
-            },
-            "template": {
-                "metadata": {
-                    "labels": {
-                        'customer': customer,
-                        'name': full_name,
-                        'subscriptionStart': sub_start,
-                        'custObjUuid': str_uuid
-                    }
-                },
-                "spec": {
-                    "containers": [
-                        {
-                            "name": full_name,
-                            "image": image,
-                            'ports': [ {'containerPort': 27015 } ],
-                            'env': [
-                                {
-                                    "name": "CSGO_GSLT",
-                                    "valueFrom": {
-                                        "secretKeyRef": {
-                                            "name": secret_name,
-                                            "key": "value"
-                                        }
-                                    } 
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        }
-    }
+    # Todo: Import yaml and do things with it
+    try:
+        print("Attempting to load deployment yaml...")
+        path = os.path.join(os.path.dirname("resources"), 'deployment.yaml')
+        tmp_yaml = open(path, 'rt').read()
+        
+        print("> Attempting to populate deployment yaml...")
+        body = yaml.safe_load(
+            tmp_yaml.format(
+                full_name=full_name,
+                namespace=namespace,
+                labels=labels,
+                customer=customer,
+                image=image,
+                secret_name=secret_name
+            )
+        )
+        
+        print(f"> Populated deployment yaml: {body}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
     
     return body
 
-def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
+def get_service_body(str_uuid, name, namespace, customer, labels):
     """ Generate service resource
 
     Args:
@@ -161,49 +136,34 @@ def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
         name (string): Name of server
         namespace (string): Which namespace
         customer (string): Which customer
-        sub_start (int): When subscription for started
         labels (dict): Labels
     """
     
     uuid_part = str_uuid[:8]
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
+    full_name = f"service-{full_name}"
     
     dyn_port = str(allocate_random_port())
     
-    # !!!!!!!!!!!!!!!!!
-    # TODO: Dynamic port allocation
-    # !!!!!!!!!!!!!!!!!
-    
-    body = {
-        'apiVersion': 'v1',
-        'kind': 'Service',
-        'metadata': {
-            'name': f"service-{full_name}",
-            'namespace': namespace,
-            'labels': labels 
-        },
-        'spec': {
-            "selector": {
-                'custObjUuid': str_uuid
-            },
-            "ports": [
-                {
-                    "name": "ingress-tcp",
-                    "port": 27015,
-                    "protocol": "TCP",
-                    "targetPort": dyn_port
-                },
-                {
-                    "name": "ingress-udp",
-                    "port": 27015,
-                    "protocol": "UDP",
-                    "targetPort": dyn_port
-                },
-            ],
-            "type": "LoadBalancer"
-        }
-    }
-            
+    try:
+        print("Attempting to load service yaml...")
+        path = os.path.join(os.path.dirname("resources"), 'service.yaml')
+        tmp_yaml = open(path, 'rt').read()
+        
+        print("> Attempting to populate service yaml...")
+        body = yaml.safe_load(
+            tmp_yaml.format(
+                full_name=full_name,
+                namespace=namespace,
+                labels=labels,
+                dyn_port=dyn_port,
+            )
+        )
+        
+        print(f"> Populated service yaml: {body}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
+
     return body
 
 def dyn_client_auth():
@@ -238,7 +198,9 @@ def create_fn(spec, meta, logger, **kwargs):
     if not image:
         raise kopf.PermanentError(f"image must be set. Got {image!r}.")
     if not sub_start:
-        raise kopf.PermanentError(f"sub_start must be set. Got {sub_start!r}.")
+        print(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
+        sub_start = str(int(datetime.now().timestamp()))
+        print(f("> subscriptionStart will now be: {sub_start}"))
 
     # authenticate against the cluster
     print("Doing logon for resource creation...")

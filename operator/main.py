@@ -166,15 +166,21 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
 
     return body
 
-def dyn_client_auth():
+def dyn_client_auth(logger):
     """
     Authenticate dynamic client
     """
     
+    logger.info("> Loading incluster config...")
     config.load_incluster_config()
+    
+    logger.info("> Loading k8s config...")
     k8s_config = client.Configuration()
+    
+    logger.info("> Loading incluster client...")
     k8s_client = client.api_client.ApiClient(configuration=k8s_config)
     
+    logger.info("> Returning...")
     return DynamicClient(k8s_client)
 
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
@@ -204,7 +210,7 @@ def create_fn(spec, meta, logger, **kwargs):
 
     # authenticate against the cluster
     logger.info("Doing logon for resource creation...")
-    dyn_client = dyn_client_auth()
+    dyn_client = dyn_client_auth(logger)
 
     # Create server
     obj = create_server(dyn_client, logger, name, namespace, image, sub_start)

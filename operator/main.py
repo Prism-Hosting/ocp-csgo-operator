@@ -202,7 +202,7 @@ def create_fn(spec, meta, logger, **kwargs):
 
     # Create server
     logger.info("Calling 'create_server'...")
-    obj = create_server(logger, name, namespace, image, sub_start)
+    obj = create_server(logger, name, namespace, customer, image, sub_start)
 
     logger.info("PRISM server created.")
 

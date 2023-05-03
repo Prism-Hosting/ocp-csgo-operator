@@ -10,6 +10,7 @@ from openshift.dynamic import DynamicClient
 from kubernetes import client, config
 import uuid
 import random
+import yaml
 import os
 
 def allocate_random_port():
@@ -78,14 +79,14 @@ def get_resources(name, namespace, customer, image, sub_start):
     
     try:
         resources = []
-        resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels))
-        resources.append(get_service_body(str_uuid, name, namespace, customer, sub_start, labels))
+        resources.append(get_deployment_body(str_uuid, name, namespace, customer, image, labels))
+        resources.append(get_service_body(str_uuid, name, namespace, customer, labels))
     except Exception as e:
         raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
     
     return resources
 
-def get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, labels):
+def get_deployment_body(str_uuid, name, namespace, customer, image, labels):
     """ return deployment resource body
 
     Args:
@@ -104,10 +105,30 @@ def get_deployment_body(str_uuid, name, namespace, customer, image, sub_start, l
     secret_name = "gslt-code"
     
     # Todo: Import yaml and do things with it
+    try:
+        print("Attempting to load deployment yaml...")
+        path = os.path.join(os.path.dirname("resources"), 'deployment.yaml')
+        tmp_yaml = open(path, 'rt').read()
+        
+        print("> Attempting to populate deployment yaml...")
+        body = yaml.safe_load(
+            tmp_yaml.format(
+                full_name=full_name,
+                namespace=namespace,
+                labels=labels,
+                customer=customer,
+                image=image
+                secret_name=secret_name
+            )
+        )
+        
+        print(f"> Populated deployment yaml: {body}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
     
     return body
 
-def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
+def get_service_body(str_uuid, name, namespace, customer, labels):
     """ Generate service resource
 
     Args:
@@ -115,7 +136,6 @@ def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
         name (string): Name of server
         namespace (string): Which namespace
         customer (string): Which customer
-        sub_start (int): When subscription for started
         labels (dict): Labels
     """
     
@@ -125,11 +145,24 @@ def get_service_body(str_uuid, name, namespace, customer, sub_start, labels):
     
     dyn_port = str(allocate_random_port())
     
-    # !!!!!!!!!!!!!!!!!
-    # TODO: Dynamic port allocation
-    # !!!!!!!!!!!!!!!!!
-    
-    # Todo: Import yaml and do things with it
+    try:
+        print("Attempting to load service yaml...")
+        path = os.path.join(os.path.dirname("resources"), 'service.yaml')
+        tmp_yaml = open(path, 'rt').read()
+        
+        print("> Attempting to populate service yaml...")
+        body = yaml.safe_load(
+            tmp_yaml.format(
+                full_name=full_name,
+                namespace=namespace,
+                labels=labels,
+                dyn_port=dyn_port,
+            )
+        )
+        
+        print(f"> Populated service yaml: {body}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
 
     return body
 

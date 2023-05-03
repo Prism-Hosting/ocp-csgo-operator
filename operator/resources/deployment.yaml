@@ -11,11 +11,7 @@ spec:
       name: "{full_name}"
     template: 
       metadata: 
-        labels: 
-          customer: "{customer}"
-          name: "{full_name}"
-          subscriptionStart: "{sub_start}"
-          custObjUuid: "{str_uuid}"
+        labels: {labels}
         spec: 
           containers:
             - name: "{full_name}"

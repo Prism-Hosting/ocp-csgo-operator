@@ -117,7 +117,7 @@ def get_deployment_body(str_uuid, name, namespace, customer, image, labels):
                 namespace=namespace,
                 labels=labels,
                 customer=customer,
-                image=image
+                image=image,
                 secret_name=secret_name
             )
         )

@@ -33,24 +33,24 @@ def create_server(dyn_client, logger, name, namespace, customer, image, sub_star
     Create the server
     """
     
-    print(f"Creating a resource in {namespace}")
+    logger.info(f"Creating a resource in {namespace}")
     
     # TODO REWRITE
     v1_server = dyn_client.resources.get(api_version='velero.io/v1', kind='Pod')
-    bodies = get_resources(name, namespace, customer, image, sub_start)
 
     # Create the above schedule resource
     try:
+        bodies = get_resources(logger, name, namespace, customer, image, sub_start)
+    
         for body in bodies:
-            print(f"> Creating: {body.kind}: {body.metadata.name} (UUID: {body.metadata.labels.custObjUuid})")
+            logger.info(f"> Creating: {body.kind}: {body.metadata.name} (UUID: {body.metadata.labels.custObjUuid})")
             return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as err:
-        logger.error(f" > Resource creation has failed {err}")
         raise kopf.TemporaryError(f"Resource creation has failed {err}")
     
     return return_object
 
-def get_resources(name, namespace, customer, image, sub_start):
+def get_resources(logger, name, namespace, customer, image, sub_start):
     """ Creates an array of kubernetes resources (Deployment, service) for further use
 
     Args:
@@ -86,7 +86,7 @@ def get_resources(name, namespace, customer, image, sub_start):
     
     return resources
 
-def get_deployment_body(str_uuid, name, namespace, customer, image, labels):
+def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels):
     """ return deployment resource body
 
     Args:
@@ -106,11 +106,11 @@ def get_deployment_body(str_uuid, name, namespace, customer, image, labels):
     
     # Todo: Import yaml and do things with it
     try:
-        print("Attempting to load deployment yaml...")
+        logger.info("Attempting to load deployment yaml...")
         path = os.path.join(os.path.dirname("resources"), 'deployment.yaml')
         tmp_yaml = open(path, 'rt').read()
         
-        print("> Attempting to populate deployment yaml...")
+        logger.info("> Attempting to populate deployment yaml...")
         body = yaml.safe_load(
             tmp_yaml.format(
                 full_name=full_name,
@@ -122,7 +122,7 @@ def get_deployment_body(str_uuid, name, namespace, customer, image, labels):
             )
         )
         
-        print(f"> Populated deployment yaml: {body}")
+        logger.info(f"> Populated deployment yaml: {body}")
     except Exception as e:
         raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
     
@@ -146,11 +146,11 @@ def get_service_body(str_uuid, name, namespace, customer, labels):
     dyn_port = str(allocate_random_port())
     
     try:
-        print("Attempting to load service yaml...")
+        logger.info("Attempting to load service yaml...")
         path = os.path.join(os.path.dirname("resources"), 'service.yaml')
         tmp_yaml = open(path, 'rt').read()
         
-        print("> Attempting to populate service yaml...")
+        logger.info("> Attempting to populate service yaml...")
         body = yaml.safe_load(
             tmp_yaml.format(
                 full_name=full_name,
@@ -160,7 +160,7 @@ def get_service_body(str_uuid, name, namespace, customer, labels):
             )
         )
         
-        print(f"> Populated service yaml: {body}")
+        logger.info(f"> Populated service yaml: {body}")
     except Exception as e:
         raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
 
@@ -181,7 +181,7 @@ def dyn_client_auth():
 def create_fn(spec, meta, logger, **kwargs):
     """resource create handler"""
 
-    print("A resource is being created...")
+    logger.info("A resource is being created...")
 
     # Get resource metadata
     name = meta.get('name')
@@ -198,12 +198,12 @@ def create_fn(spec, meta, logger, **kwargs):
     if not image:
         raise kopf.PermanentError(f"image must be set. Got {image!r}.")
     if not sub_start:
-        print(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
+        logger.info(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
         sub_start = str(int(datetime.now().timestamp()))
-        print(f("> subscriptionStart will now be: {sub_start}"))
+        logger.info(f("> subscriptionStart will now be: {sub_start}"))
 
     # authenticate against the cluster
-    print("Doing logon for resource creation...")
+    logger.info("Doing logon for resource creation...")
     dyn_client = dyn_client_auth()
 
     # Create server

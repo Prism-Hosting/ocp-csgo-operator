@@ -54,9 +54,11 @@ def create_server(logger, name, namespace, customer, sub_start):
     
         logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:
-            logger.info(f"> Getting v1_server...")
+            # Owner reference
+            logger.info(f"> Setting owner reference...")
+            kopf.adopt(body)
             
-            # BREAKS HERE (Handler 'create_fn' failed permanently: Resource creation has failed: name 'dyn_client' is not defined)
+            logger.info(f"> Getting v1_server...")
             v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
             
             #logger.info("> Publishing resource (", body["apiVersion"], body["kind"], ")...")
@@ -65,6 +67,7 @@ def create_server(logger, name, namespace, customer, sub_start):
     except Exception as e:
         raise kopf.PermanentError(f"Resource creation has failed: {str(e)}")
     
+    # CAUTION: Will always be the LAST resource that was created
     return return_object
 
 def get_resources(logger, name, namespace, customer, sub_start):
@@ -217,5 +220,5 @@ def create_fn(spec, meta, logger, **kwargs):
 
     logger.info("PRISM server created.")
 
-    return {'server-name': obj.metadata.name, 'namespace': namespace, 'message': 'successfully created', 'time': f"{str( int( time.time() ) )}"}
+    return {'server-name': obj.metadata.name, "customer-objects-uuid": obj.metadata.labels.custObjUuid ,'message': 'Successfully created', 'time': f"{str( int( time.time() ) )}"}
 

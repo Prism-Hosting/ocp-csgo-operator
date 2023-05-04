@@ -65,7 +65,6 @@ def create_server(logger, name, namespace, customer, sub_start):
     logger.info(f"Creating a resource in {namespace}")
     
     # Attempt logon
-    logger.info("> Attempting logon")
     try:
         kubernetes.config.load_incluster_config()
         k8s_client = kubernetes.client.ApiClient()
@@ -73,8 +72,6 @@ def create_server(logger, name, namespace, customer, sub_start):
 
     except Exception as e:
         raise kopf.PermanentError(f"Failed to create dynamic client: {str(e)}")
-    
-    logger.info("> dynamic client created")
 
     # Create the above schedule resource
     try:
@@ -83,10 +80,8 @@ def create_server(logger, name, namespace, customer, sub_start):
         logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:
             # Owner reference
-            logger.info(f"> Setting owner reference...")
             kopf.adopt(body)
             
-            logger.info(f"> Getting v1_server...")
             v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
             
             logger.info(f"> Resource body: {body}")

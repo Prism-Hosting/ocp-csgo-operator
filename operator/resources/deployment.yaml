@@ -32,4 +32,10 @@ spec:
                   secretKeyRef: 
                       name: "{secret_name}"
                       key: value
+          resources:
+            limits:
+              memory: "1G"
+              cpu: "500m"
+            requests:
+              memory: "500m"
 

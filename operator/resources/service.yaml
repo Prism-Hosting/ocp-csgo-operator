@@ -4,10 +4,10 @@ metadata:
   name: "{full_name}"
   namespace: "{namespace}"
   labels:
-    customer: {customer}
-    name: {full_name}
-    subscriptionStart: {sub_start}
-    custObjUuid: {str_uuid}
+    customer: "{customer}"
+    name: "{full_name}"
+    subscriptionStart: "{sub_start}"
+    custObjUuid: "{str_uuid}"
 spec:
   selector:
     custObjUuid: "{str_uuid}"

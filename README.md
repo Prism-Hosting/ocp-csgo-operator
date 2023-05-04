@@ -2,14 +2,12 @@
 Operator to facilitate creation and management of cs:go servers
 
 ## Usage
-Create server:
-```yaml
-apiVersion: prismservers.prism-hosting.ch/v1
-kind: PrismServer
-spec:
-  customer: cust-01
-  # [string] Customer identifier
+For an example yaml, see the folder `test`.
 
-  subscriptionStart: 1683139792
-  # [string] UNIX timestamp
+## Custom building
+Proper building and tagging:
+
+``` shell
+docker build -t thisisnttheway/ocp-csgo-operator:latest .
+docker image push thisisnttheway/ocp-csgo-operator:latest
 ```

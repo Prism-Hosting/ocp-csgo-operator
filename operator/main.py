@@ -59,7 +59,7 @@ def create_server(logger, name, namespace, customer, sub_start):
             # BREAKS HERE (Handler 'create_fn' failed permanently: Resource creation has failed: name 'dyn_client' is not defined)
             v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
             
-            logger.info("> Publishing resource (", body["apiVersion"], body["kind"], ")...")
+            #logger.info("> Publishing resource (", body["apiVersion"], body["kind"], ")...")
             logger.info(f"> Resource body: {body}")
             return_object = v1_server.create(body=body, namespace=namespace)
     except Exception as e:

@@ -3,10 +3,10 @@
 Operator to create and manage CS:GO servers.
 """
 
-import datetime
+import time
 import logging
 import kopf
-from kubernetes import client, config
+import kubernetes
 from openshift.dynamic import DynamicClient
 import uuid
 import random
@@ -28,7 +28,7 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     
     logger.info("Operator startup succeeded!")
 
-def create_server(logger, name, namespace, customer, image, sub_start):
+def create_server(logger, name, namespace, customer, sub_start):
     """
     Create the server
     """
@@ -37,33 +37,46 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     
     # Attempt logon
     logger.info("> Attempting logon")
-    k8s_client = config.load_incluster_config()
-    dyn_client = DynamicClient(k8s_client)
+    try:
+        kubernetes.config.load_incluster_config()
+        k8s_client = kubernetes.client.ApiClient()
+        dyn_client = DynamicClient(k8s_client)
+
+
+    except Exception as e:
+        raise kopf.PermanentError(f"Failed to create dynamic client: {str(e)}")
     
-    logger.info("> dyn_client created")
+    logger.info("> dynamic client created")
 
     # Create the above schedule resource
     try:
-        bodies = get_resources(logger, name, namespace, customer, image, sub_start)
+        bodies = get_resources(logger, name, namespace, customer, sub_start)
     
+        logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:
-            logger.info(f"> Creating: {body.kind}: {body.metadata.name} (UUID: {body.metadata.labels.custObjUuid})")
+            # Owner reference
+            logger.info(f"> Setting owner reference...")
+            kopf.adopt(body)
             
-            v1_server = dyn_client.resources.get(api_version=body.apiVersion, kind=body.kind)
+            logger.info(f"> Getting v1_server...")
+            v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
+            
+            #logger.info("> Publishing resource (", body["apiVersion"], body["kind"], ")...")
+            logger.info(f"> Resource body: {body}")
             return_object = v1_server.create(body=body, namespace=namespace)
-    except Exception as err:
-        raise kopf.TemporaryError(f"Resource creation has failed {err}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Resource creation has failed: {str(e)}")
     
+    # CAUTION: Will always be the LAST resource that was created
     return return_object
 
-def get_resources(logger, name, namespace, customer, image, sub_start):
+def get_resources(logger, name, namespace, customer, sub_start):
     """ Creates an array of kubernetes resources (Deployment, service) for further use
 
     Args:
         name (string): Name of server
         namespace (string): Namespace
         customer (string): Customer
-        image (string): Image to use
         sub_start (string): DateTime of subscription start
 
 
@@ -85,14 +98,14 @@ def get_resources(logger, name, namespace, customer, image, sub_start):
     
     try:
         resources = []
-        resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels))
+        resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, labels))
         resources.append(get_service_body(logger, str_uuid, name, namespace, customer, labels))
     except Exception as e:
-        raise kopf.TemporaryError(f"Was unable to obtain all resources: {str(e)}")
+        raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")
     
     return resources
 
-def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels):
+def get_deployment_body(logger, str_uuid, name, namespace, customer, labels):
     """ return deployment resource body
 
     Args:
@@ -113,7 +126,7 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labe
     # Todo: Import yaml and do things with it
     try:
         logger.info("Attempting to load deployment yaml...")
-        path = os.path.join(os.path.dirname("resources"), 'deployment.yaml')
+        path = os.path.join(os.path.dirname("resources/"), 'deployment.yaml')
         tmp_yaml = open(path, 'rt').read()
         
         logger.info("> Attempting to populate deployment yaml...")
@@ -123,7 +136,8 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labe
                 namespace=namespace,
                 labels=labels,
                 customer=customer,
-                image=image,
+                sub_start=labels["subscriptionStart"],
+                str_uuid=labels["custObjUuid"],
                 secret_name=secret_name
             )
         )
@@ -153,13 +167,16 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
     
     try:
         logger.info("Attempting to load service yaml...")
-        path = os.path.join(os.path.dirname("resources"), 'service.yaml')
+        path = os.path.join(os.path.dirname("resources/"), 'service.yaml')
         tmp_yaml = open(path, 'rt').read()
         
         logger.info("> Attempting to populate service yaml...")
         body = yaml.safe_load(
             tmp_yaml.format(
                 full_name=full_name,
+                customer=customer,
+                sub_start=labels["subscriptionStart"],
+                str_uuid=labels["custObjUuid"],
                 namespace=namespace,
                 labels=labels,
                 dyn_port=dyn_port,
@@ -184,27 +201,24 @@ def create_fn(spec, meta, logger, **kwargs):
 
     # Get resource data
     customer = spec.get('customer')
-    image = spec.get('image')
     sub_start = spec.get('subscriptionStart')
     
     # Sanity checks
     if not customer:
         raise kopf.PermanentError(f"customer must be set. Got {customer!r}.")
-    if not image:
-        raise kopf.PermanentError(f"image must be set. Got {image!r}.")
     if not sub_start:
         logger.info(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
-        sub_start = str(int(datetime.now().timestamp()))
-        logger.info(f("> subscriptionStart will now be: {sub_start}"))
+        sub_start = str( int( time.time() ) )
+        logger.info(f"> subscriptionStart will now be: {sub_start}")
 
     # authenticate against the cluster
     logger.info("Doing logon for resource creation...")
 
     # Create server
     logger.info("Calling 'create_server'...")
-    obj = create_server(logger, name, namespace, image, sub_start)
+    obj = create_server(logger, name, namespace, customer, sub_start)
 
     logger.info("PRISM server created.")
 
-    return {'server-name': obj.metadata.name, 'namespace': namespace, 'message': 'successfully created', 'time': f"{datetime.utcnow()}"}
+    return {'server-name': obj.metadata.name, "customer-objects-uuid": obj.metadata.labels.custObjUuid ,'message': 'Successfully created', 'time': f"{str( int( time.time() ) )}"}
 

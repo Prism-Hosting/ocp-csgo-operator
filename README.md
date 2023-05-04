@@ -2,17 +2,21 @@
 Operator to facilitate creation and management of cs:go servers
 
 ## Usage
-Create server:
-```yaml
-apiVersion: prismservers.prism-hosting.ch/v1
-kind: PrismServer
-spec:
-  customer: cust-01
-  # [string] Customer identifier
+For an example yaml, see the folder `test`.
 
-  image: timche/csgo
-  # [string] Docker image
+### Quick testing
 
-  subscriptionStart: 1683139792
-  # [string] UNIX timestamp
+``` shell
+docker build -t $REPO/ocp-csgo-operator:latest .
+docker image push $REPO/ocp-csgo-operator:latest
+
+# Destroy ALL prism resources
+oc -n prism-servers delete (oc -n prism-servers get prismserver -o name)
+oc -n prism-servers delete (oc -n prism-servers get deployment --selector='custObjUuid' -o name)
+oc -n prism-servers delete (oc -n prism-servers get service --selector='custObjUuid' -o name)
+
+# Destroy operator pods
+oc -n prism-servers delete (oc -n prism-servers get po --selector=app=prismserver-operator -o name)
+
+oc apply -f test/prismserver_example.yaml
 ```

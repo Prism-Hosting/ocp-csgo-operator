@@ -3,15 +3,21 @@ kind: Service
 metadata: 
   name: "{full_name}"
   namespace: "{namespace}"
-  labels: {labels}
+  labels:
+    customer: "{customer}"
+    name: "{full_name}"
+    subscriptionStart: "{sub_start}"
+    custObjUuid: "{str_uuid}"
 spec:
   selector:
     custObjUuid: "{str_uuid}"
   ports:
   - port: 27015
+    name: csgo-tcp
     protocol: TCP
-    targetPort: "{dyn_port}"
+    targetPort: {dyn_port}
   - port: 27015
+    name: csgo-udp
     protocol: UDP
-    targetPort: "{dyn_port}"
+    targetPort: {dyn_port}
   type: LoadBalancer

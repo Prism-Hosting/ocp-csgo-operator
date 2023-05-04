@@ -32,10 +32,19 @@ spec:
                   secretKeyRef: 
                       name: "{secret_name}"
                       key: value
+          volumeMounts:
+            - mountPath: /home/csgo/server
+              name: csgo-data
           resources:
             limits:
               memory: "1G"
-              cpu: "500m"
+              cpu: "4500m"
             requests:
               memory: "500m"
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: csgo-data
+          persistentVolumeClaim:
+            claimName: "pvc-{full_name}"
 

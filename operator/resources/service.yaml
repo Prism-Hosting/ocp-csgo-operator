@@ -9,6 +9,8 @@ metadata:
     subscriptionStart: "{sub_start}"
     custObjUuid: "{str_uuid}"
 spec:
+  externalIPs:
+    - 172.16.2.6
   selector:
     custObjUuid: "{str_uuid}"
   ports:

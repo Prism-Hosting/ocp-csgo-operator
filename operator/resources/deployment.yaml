@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: apps/v1
 kind: Deployment
 metadata: 
   name: "{full_name}"
@@ -13,19 +13,19 @@ spec:
     matchLabels: 
       customer: "{customer}"
       name: "{full_name}"
-    template: 
-      metadata: 
-        labels: {labels}
-        spec: 
-          containers:
-            - name: "{full_name}"
-              image: timche/csgo
-              ports: 
-                - containerPort: 27015
-              env:
-                - name: CSGO_GSLT
-                  valueFrom: 
-                      secretKeyRef: 
-                          name: "{secret_name}"
-                          key: value
+  template: 
+    metadata: 
+      labels: {labels}
+      spec: 
+        containers:
+          - name: "{full_name}"
+            image: timche/csgo
+            ports: 
+              - containerPort: 27015
+            env:
+              - name: CSGO_GSLT
+                valueFrom: 
+                    secretKeyRef: 
+                        name: "{secret_name}"
+                        key: value
 

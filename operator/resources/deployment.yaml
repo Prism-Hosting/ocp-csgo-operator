@@ -38,8 +38,8 @@ spec:
           resources:
             limits:
               memory: "1G"
-              cpu: "4500m"
             requests:
+              cpu: "500m"
               memory: "500m"
       securityContext:
         fsGroup: 1000

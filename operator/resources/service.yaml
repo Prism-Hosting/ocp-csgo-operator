@@ -12,12 +12,12 @@ spec:
   selector:
     custObjUuid: "{str_uuid}"
   ports:
-  - port: 27015
+  - port: {dyn_port}
     name: csgo-tcp
     protocol: TCP
-    targetPort: {dyn_port}
-  - port: 27015
+    targetPort: 27015
+  - port: {dyn_port}
     name: csgo-udp
     protocol: UDP
-    targetPort: {dyn_port}
+    targetPort: 27015
   type: LoadBalancer

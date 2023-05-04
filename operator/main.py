@@ -3,7 +3,7 @@
 Operator to create and manage CS:GO servers.
 """
 
-import datetime
+import time
 import logging
 import kopf
 import kubernetes
@@ -205,7 +205,7 @@ def create_fn(spec, meta, logger, **kwargs):
         raise kopf.PermanentError(f"customer must be set. Got {customer!r}.")
     if not sub_start:
         logger.info(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
-        sub_start = str(int(datetime.now().timestamp()))
+        sub_start = str( int( time.time() ) )
         logger.info(f"> subscriptionStart will now be: {sub_start}")
 
     # authenticate against the cluster
@@ -217,5 +217,5 @@ def create_fn(spec, meta, logger, **kwargs):
 
     logger.info("PRISM server created.")
 
-    return {'server-name': obj.metadata.name, 'namespace': namespace, 'message': 'successfully created', 'time': f"{datetime.utcnow()}"}
+    return {'server-name': obj.metadata.name, 'namespace': namespace, 'message': 'successfully created', 'time': f"{str( int( time.time() ) )}"}
 

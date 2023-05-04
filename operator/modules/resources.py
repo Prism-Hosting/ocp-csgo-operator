@@ -43,9 +43,11 @@ def get_resources(logger, name, namespace, customer, sub_start):
     }
     
     try:
-        resources = []
-        resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, labels))
-        resources.append(get_service_body(logger, str_uuid, name, namespace, customer, labels))
+        resources = [
+            get_deployment_body(logger, str_uuid, name, namespace, customer, labels),
+            get_service_body(logger, str_uuid, name, namespace, customer, labels),
+            get_pvc_body(logger, str_uuid, name, namespace, customer, labels)
+        ]
     except Exception as e:
         raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")
     
@@ -58,7 +60,6 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, labels):
         str_uuid (string): UUID as string
         name (string): Name of server
         namespace (string): Which namespace
-        image (string): Which image
         customer (string): Which customer
         sub_start (string): When subscription has started
         labels (dict): Labels
@@ -72,19 +73,54 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, labels):
     # Todo: Import yaml and do things with it
     try:
         logger.info("Attempting to load deployment yaml...")
-        path = os.path.join(os.path.dirname("resources/"), 'deployment.yaml')
+        path = os.path.join(os.path.dirname("resources/"), 'Deployment.yaml')
         tmp_yaml = open(path, 'rt').read()
         
-        logger.info("> Attempting to populate deployment yaml...")
         body = yaml.safe_load(
             tmp_yaml.format(
                 full_name=full_name,
                 namespace=namespace,
-                labels=labels,
                 customer=customer,
                 sub_start=labels["subscriptionStart"],
                 str_uuid=labels["custObjUuid"],
                 secret_name=secret_name
+            )
+        )
+        
+        logger.info(f"> Populated deployment yaml: {body}")
+    except Exception as e:
+        raise kopf.PermanentError(f"Error during YAML population: {str(e)}.")
+    
+    return body
+
+def get_pvc_body(logger, str_uuid, name, namespace, customer, labels):
+    """ return deployment resource body
+
+    Args:
+        str_uuid (string): UUID as string
+        name (string): Name of server
+        namespace (string): Which namespace
+        customer (string): Which customer
+        labels (dict): Labels
+    """
+    
+    uuid_part = str_uuid[:8]
+    
+    full_name = f"pvc-csgo-server-{name}-{customer}-{uuid_part}"
+    
+    # Todo: Import yaml and do things with it
+    try:
+        logger.info("Attempting to load pvc yaml...")
+        path = os.path.join(os.path.dirname("resources/"), 'PersistentVolumeClaim.yaml')
+        tmp_yaml = open(path, 'rt').read()
+        
+        body = yaml.safe_load(
+            tmp_yaml.format(
+                full_name=full_name,
+                namespace=namespace,
+                customer=customer,
+                sub_start=labels["subscriptionStart"],
+                str_uuid=labels["custObjUuid"],
             )
         )
         
@@ -113,10 +149,9 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
     
     try:
         logger.info("Attempting to load service yaml...")
-        path = os.path.join(os.path.dirname("resources/"), 'service.yaml')
+        path = os.path.join(os.path.dirname("resources/"), 'Service.yaml')
         tmp_yaml = open(path, 'rt').read()
         
-        logger.info("> Attempting to populate service yaml...")
         body = yaml.safe_load(
             tmp_yaml.format(
                 full_name=full_name,
@@ -124,7 +159,6 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
                 sub_start=labels["subscriptionStart"],
                 str_uuid=labels["custObjUuid"],
                 namespace=namespace,
-                labels=labels,
                 dyn_port=dyn_port,
             )
         )

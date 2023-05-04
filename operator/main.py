@@ -197,18 +197,15 @@ def create_fn(spec, meta, logger, **kwargs):
 
     # Get resource data
     customer = spec.get('customer')
-    image = spec.get('image')
     sub_start = spec.get('subscriptionStart')
     
     # Sanity checks
     if not customer:
         raise kopf.PermanentError(f"customer must be set. Got {customer!r}.")
-    if not image:
-        raise kopf.PermanentError(f"image must be set. Got {image!r}.")
     if not sub_start:
         logger.info(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")
         sub_start = str(int(datetime.now().timestamp()))
-        logger.info(f("> subscriptionStart will now be: {sub_start}"))
+        logger.info(f"> subscriptionStart will now be: {sub_start}")
 
     # authenticate against the cluster
     logger.info("Doing logon for resource creation...")

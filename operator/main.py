@@ -6,7 +6,7 @@ Operator to create and manage CS:GO servers.
 import datetime
 import logging
 import kopf
-from kubernetes import client, config
+import kubernetes
 from openshift.dynamic import DynamicClient
 import uuid
 import random
@@ -28,7 +28,7 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     
     logger.info("Operator startup succeeded!")
 
-def create_server(logger, name, namespace, customer, image, sub_start):
+def create_server(logger, name, namespace, customer, sub_start):
     """
     Create the server
     """
@@ -50,7 +50,7 @@ def create_server(logger, name, namespace, customer, image, sub_start):
 
     # Create the above schedule resource
     try:
-        bodies = get_resources(logger, name, namespace, customer, image, sub_start)
+        bodies = get_resources(logger, name, namespace, customer, sub_start)
     
         logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:
@@ -66,14 +66,13 @@ def create_server(logger, name, namespace, customer, image, sub_start):
     
     return return_object
 
-def get_resources(logger, name, namespace, customer, image, sub_start):
+def get_resources(logger, name, namespace, customer, sub_start):
     """ Creates an array of kubernetes resources (Deployment, service) for further use
 
     Args:
         name (string): Name of server
         namespace (string): Namespace
         customer (string): Customer
-        image (string): Image to use
         sub_start (string): DateTime of subscription start
 
 
@@ -95,14 +94,14 @@ def get_resources(logger, name, namespace, customer, image, sub_start):
     
     try:
         resources = []
-        resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels))
+        resources.append(get_deployment_body(logger, str_uuid, name, namespace, customer, labels))
         resources.append(get_service_body(logger, str_uuid, name, namespace, customer, labels))
     except Exception as e:
         raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")
     
     return resources
 
-def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labels):
+def get_deployment_body(logger, str_uuid, name, namespace, customer, labels):
     """ return deployment resource body
 
     Args:
@@ -135,7 +134,6 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, image, labe
                 customer=customer,
                 sub_start=labels["subscriptionStart"],
                 str_uuid=labels["custObjUuid"],
-                image=image,
                 secret_name=secret_name
             )
         )

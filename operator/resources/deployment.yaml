@@ -19,7 +19,7 @@ spec:
         spec: 
           containers:
             - name: "{full_name}"
-              image: "{image}"
+              image: timche/csgo
               ports: 
                 - containerPort: 27015
               env:

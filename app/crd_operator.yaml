@@ -23,8 +23,6 @@ spec:
             properties:
               customer:
                 type: string
-              image:
-                type: string
               subscriptionStart:
                 type: integer
           status:

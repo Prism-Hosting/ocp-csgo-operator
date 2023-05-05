@@ -14,14 +14,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  docker-build:
     uses: Prism-Hosting/git-workflows/.github/workflows/docker-build.yml@main
     secrets: inherit
 
   update_operator:
     uses: Prism-Hosting/git-workflows/.github/workflows/oc-action.yml@main
     secrets: inherit
-    needs: build
+    needs: docker-build
     with:
       namespace: ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} 
       oc-command: delete $(oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} get po -o name | grep operator)

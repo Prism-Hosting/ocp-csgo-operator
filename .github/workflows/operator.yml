@@ -19,18 +19,10 @@ jobs:
     secrets: inherit
 
   update_operator:
-    runs-on: self-hosted
+    uses: Prism-Hosting/git-workflows/.github/workflows/oc-action.yml@main
+    secrets: inherit
     needs: build
-
-    steps:
-    - name: Install oc
-      uses: redhat-actions/openshift-tools-installer@v1
-      with:
-        oc: latest
-
-    - name: Login to cluster
-      run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token='${{ secrets.OPENSHIFT_SA_TOKEN }}' --insecure_skip_tls_verify=true
-
-    - name: Remove operator pods
-      run: oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} delete $(oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} get po -o name | grep operator)
+    with:
+      namespace: ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} 
+      oc-command: delete $(oc -n ${{ vars.OPENSHIFT_PRISM_NAMESPACE }} get po -o name | grep operator)
       

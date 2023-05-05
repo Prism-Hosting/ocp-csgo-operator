@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: "{full_name}"
+  namespace: "{namespace}"
+  labels:
+    customer: "{customer}"
+    name: "{full_name}"
+    subscriptionStart: "{sub_start}"
+    custObjUuid: "{str_uuid}"
+spec: 
+  selector: 
+    matchLabels: 
+      customer: "{customer}"
+      name: "{full_name}"
+  template: 
+    metadata:
+      labels:
+        customer: "{customer}"
+        name: "{full_name}"
+        subscriptionStart: "{sub_start}"
+        custObjUuid: "{str_uuid}"
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: "{full_name}"
+          image: timche/csgo
+          ports: 
+            - containerPort: 27015
+          env:
+            - name: CSGO_GSLT
+              valueFrom: 
+                  secretKeyRef: 
+                      name: "{secret_name}"
+                      key: value
+            - name: SERVER_CONFIGS
+              value: "true"
+          volumeMounts:
+            - mountPath: /home/csgo/server
+              name: csgo-data
+      volumes:
+        - name: csgo-data
+          persistentVolumeClaim:
+            claimName: "pvc-{full_name}"
+

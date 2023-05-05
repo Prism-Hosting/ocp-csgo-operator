@@ -31,10 +31,10 @@ spec:
           - name: UNIFI_API_USER
             valueFrom:
               secretKeyRef:
-                key: unifi-api-credentials
-                name: user
+                key: user
+                name: userunifi-api-credentials
           - name: UNIFI_API_PASS
             valueFrom:
               secretKeyRef:
-                key: unifi-api-credentials
-                name: password
+                key: password
+                name: unifi-api-credentials

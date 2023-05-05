@@ -19,3 +19,6 @@ rules:
   - apiGroups: ["prism-hosting.ch"]
     resources: [prismservers]
     verbs: ['*']
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]

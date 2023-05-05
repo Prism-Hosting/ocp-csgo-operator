@@ -27,4 +27,4 @@ rules:
   verbs: [watch, list]
 - apiGroups: ["prism-hosting.ch"]
   resources: [prismservers]
-  verbs: [watch, list]
+  verbs: ["*"]

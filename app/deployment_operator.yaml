@@ -32,7 +32,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 key: user
-                name: userunifi-api-credentials
+                name: unifi-api-credentials
           - name: UNIFI_API_PASS
             valueFrom:
               secretKeyRef:

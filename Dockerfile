@@ -22,4 +22,4 @@ USER 1001
 # Installation and exection
 WORKDIR ${APP_ROOT}
 RUN pip install --no-cache-dir -r requirements.txt
-CMD kopf run main.py --all-namespaces --verbose
+CMD kopf run main.py --verbose

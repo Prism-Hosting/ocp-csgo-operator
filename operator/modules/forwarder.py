@@ -45,7 +45,7 @@ def do_unifi_request(mode, target_url, json=None, cookies=None, csrf_token=None)
     """
     
     request_headers = {
-        "Accept": "application/json",
+        "Accept": "*/*",
         "Content-Type": "application/json"
     }
     
@@ -55,9 +55,8 @@ def do_unifi_request(mode, target_url, json=None, cookies=None, csrf_token=None)
     try:
         session = requests.Session()
         
-        if mode == "get":
-            
-            response = session.get(target_url, headers=request_headers, json=json, verify=False)
+        if mode == "get":            
+            response = session.get(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
             
         elif mode == "post":
             response = session.post(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
@@ -70,8 +69,7 @@ def do_unifi_request(mode, target_url, json=None, cookies=None, csrf_token=None)
     except Exception as e:
             raise ValueError(f"Error during request: {str(e)}")   
         
-    return response
-        
+    return response  
 
 def unifi_api_logon():
     """ Logs onto Unifi API
@@ -85,18 +83,12 @@ def unifi_api_logon():
         "password": os.environ['UNIFI_API_PASS']
     }
     
-    try:
-        response = do_unifi_request("post", target_url, auth_payload)
-        
-        if not response.status_code == 200:
-            raise ValueError(f"Status code not 200: {str(response.status_code)} - {response.text}")
-        
-    except Exception as e:
-            raise ValueError(f"Error during request: {str(e)}")
+    response = do_unifi_request("post", target_url, auth_payload)
+    response.raise_for_status()
     
     returnObj = {
         # {'TOKEN': 'ey123...', ""}
-        "cookies": requests.utils.dict_from_cookiejar(response.cookies),
+        "cookies": response.cookies,
         "csrf": response.headers["X-CSRF-TOKEN"]
     }
     
@@ -159,15 +151,15 @@ def get_port_forward():
     
     try:
         auth = unifi_api_logon()
-        response = do_unifi_request("post", target_url, cookies=auth["cookies"], csrf_token=auth["csrf"])
+        response = do_unifi_request("get", target_url, cookies=auth["cookies"], csrf_token=auth["csrf"])
         
         if not response.status_code == 200:
             raise ValueError(f"Status code is {str(response.status_code)} - {response.text}")
         
     except Exception as e:
-        print(f"Failed: {str(e)}")
+        print(f"get_port_forward() failed: {str(e)}")
         
-    return response.json()
+    return response
     
 """
 Sample request:

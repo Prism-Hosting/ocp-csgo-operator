@@ -2,7 +2,7 @@ FROM ubuntu:23.04
 
 # Environment
 RUN apt-get update && apt-get install \
-  -y --no-install-recommends python3 python3-virtualenv vim
+  -y --no-install-recommends curl dnsutils iputils-ping python3 python3-virtualenv vim
 
 ENV APP_ROOT=/opt
 ENV VIRTUAL_ENV=/opt/venv

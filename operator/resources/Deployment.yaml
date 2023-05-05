@@ -21,6 +21,8 @@ spec:
         subscriptionStart: "{sub_start}"
         custObjUuid: "{str_uuid}"
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: "{full_name}"
           image: timche/csgo
@@ -32,17 +34,11 @@ spec:
                   secretKeyRef: 
                       name: "{secret_name}"
                       key: value
+            - name: SERVER_CONFIGS
+              value: "true"
           volumeMounts:
             - mountPath: /home/csgo/server
               name: csgo-data
-          resources:
-            limits:
-              memory: "1G"
-            requests:
-              cpu: "500m"
-              memory: "500m"
-      securityContext:
-        fsGroup: 1000
       volumes:
         - name: csgo-data
           persistentVolumeClaim:

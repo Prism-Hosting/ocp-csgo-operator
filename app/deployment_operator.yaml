@@ -20,5 +20,5 @@ spec:
       serviceAccountName: sa-prism-operator
       containers:
       - name: prismserver-operator
-        image: thisisnttheway/ocp-csgo-operator:latest
+        image: prismhosting/ocp-csgo-operator:latest
         imagePullPolicy: Always

@@ -1,5 +1,5 @@
 """
-Module to automatically port forward
+Module to automatically forwards ports to CS:GO services on a UDM SE.
 """
 
 import kopf
@@ -159,8 +159,13 @@ def get_port_forward():
     except Exception as e:
         print(f"get_port_forward() failed: {str(e)}")
         
-    return response
-    
+    return response.json()
+
+#  ------------------------
+#           LOGIC
+#  ------------------------
+
+
 """
 Sample request:
     POST https://<ip>/proxy/network/api/s/default/rest/portforward
@@ -176,4 +181,7 @@ Sample request:
         "proto":  "tcp_udp",
         "log":  false
     }
+    
+Delete route:
+    DELETE https://{{IP}}/proxy/network/api/s/default/rest/portforward/<forwardId>
 """

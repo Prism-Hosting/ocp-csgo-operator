@@ -4,8 +4,6 @@ Module to automatically forwards ports to CS:GO services on a UDM SE.
 
 import kopf
 import kubernetes
-import logging
-import json
 import os
 import uuid
 import kopf
@@ -140,7 +138,7 @@ def create_port_forward(target_ip, target_port):
             raise ValueError(f"Status code is {str(response.status_code)} - {response.text}")
         
     except Exception as e:
-        print(f"Failed: {str(e)}")
+        raise ValueError(f"Failed: {str(e)}")
 
 def delete_port_forward(id):
     """ Delete UDM SE/PRO port forwarding rule
@@ -187,8 +185,12 @@ def get_port_forward():
 #  ------------------------
 #           LOGIC
 #  ------------------------
-
 def supervise_ips():
+    """
+    Supervises services in prism-servers ns and checks if they have an External-IP asigned.
+    If yes, checks if a port forwarding rule exists for them.
+    """
+    
     try:
         client = kube_auth()
         
@@ -200,6 +202,10 @@ def supervise_ips():
         for item in items:
             do_create = False
             do_delete = False
+            
+            this_custObjUuid = item.metadata.labels.custObjUuid
+            this_customer = item.metadata.labels.customer
+            this_prismserver_name = item.metadata.ownerReferences[0].name
             
             # Only proceed if loadBalancer has assigned an IP
             if item.status.loadBalancer:
@@ -222,13 +228,35 @@ def supervise_ips():
                 
             # (Re)create port forward
             if do_delete or do_create:
-                print(f"> Creating forward for: {this_port} -> {this_ip}")
-                
-                if do_delete:
-                    delete_port_forward(forward_id)
+                try:
+                    print(f"> Creating forward for: {this_port} -> {this_ip}")
                     
-                create_port_forward(this_ip, this_port)
-                
+                    if do_delete:
+                        delete_port_forward(forward_id)
+                        
+                    create_port_forward(this_ip, this_port)                
+                except Exception as e:
+                    print(f"> Error -> {str(e)}")
+                    
+                    # Update status obj
+                    status_obj = {
+                        "status": {
+                            "forwarding": {
+                                "phase": "Unavailable",
+                                "reason": f"\"{str(e)}\""
+                            }
+                        }
+                    }
+                    
+                    print("Attempting patch...")
+                    prismserver_api = client.resources.get(api_version="v1", kind="PrismServer")
+                    prismserver_api.patch(
+                        namespace="prism-servers",
+                        name=this_prismserver_name,
+                        body=status_obj,
+                        content_type="application/merge-patch+json"
+                    )
+
             else:
                 print("No external IP for this item.")
         

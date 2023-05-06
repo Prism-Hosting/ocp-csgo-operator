@@ -195,9 +195,10 @@ def supervise_ips():
         api = client.resources.get(api_version="v1", kind="Service")
         items = api.get(namespace="prism-servers", label_selector="customer").items
         
-        forwards = get_port_forward().data
+        forwards = get_port_forward()["data"]
         
         for item in items:
+            do_create = False
             do_delete = False
             
             # Only proceed if loadBalancer has assigned an IP
@@ -205,9 +206,11 @@ def supervise_ips():
                 this_ip = item.status.loadBalancer.ingress[0].ip
                 this_port = item.spec.ports[0].port
                 
-                for obj in json.loads(forwards):
-                    if obj["fwd"] == this_ip:
-                        if obj["fwd_port"] == this_port:
+                for forward in forwards:
+                    forward_id = forward["_id"]
+                    
+                    if forward["fwd"] == this_ip:
+                        if forward["fwd_port"] == this_port:
                             print("Forward found and it is correct.")
                         else:
                             print(f"Correcting forward for {this_ip}...")
@@ -215,13 +218,16 @@ def supervise_ips():
                             
                     else:
                         print(f"No forward for {this_ip}...")
-                        do_delete = True
+                        do_create = True
                 
             # (Re)create port forward
-            if do_delete:
+            if do_delete or do_create:
                 print(f"> Creating forward for: {this_port} -> {this_ip}")
-                delete_port_forward(obj["_id"])
-                delete_port_forward(this_ip, this_port)
+                
+                if do_delete:
+                    delete_port_forward(forward_id)
+                    
+                create_port_forward(this_ip, this_port)
                 
             else:
                 print("No external IP for this item.")

@@ -53,16 +53,7 @@ def do_unifi_request(mode, target_url, json=None, cookies=None, csrf_token=None)
     
     try:
         session = requests.Session()
-        
-        if mode == "get":            
-            response = session.get(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
-        elif mode == "post":
-            response = session.post(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
-        elif mode == "delete":
-            response = session.delete(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
-            
-        else:
-            raise ValueError(f"This request mode ({mode}) is unhandled.")
+        response = getattr(session, mode)(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
         
         session.close()
             

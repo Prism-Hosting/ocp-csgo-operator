@@ -59,7 +59,7 @@ def do_unifi_request(mode, target_url, json=None, cookies=None, csrf_token=None)
         elif mode == "post":
             response = session.post(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
         elif mode == "delete":
-            response = session.post(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
+            response = session.delete(target_url, headers=request_headers, json=json, cookies=cookies, verify=False)
             
         else:
             raise ValueError(f"This request mode ({mode}) is unhandled.")
@@ -131,8 +131,10 @@ def create_port_forward(target_ip, target_port):
     target_url = f"https://{os.environ['UNIFI_API_HOST']}/proxy/network/api/s/default/rest/portforward"
     
     try:
+        auth = unifi_api_logon()
         body = create_port_forward_body(target_ip, target_port)
-        response = do_unifi_request("post", target_url, body)
+        
+        response = do_unifi_request("post", target_url, body, cookies=auth["cookies"], csrf_token=auth["csrf"])
         
         if not response.status_code == 200:
             raise ValueError(f"Status code is {str(response.status_code)} - {response.text}")
@@ -150,7 +152,8 @@ def delete_port_forward(id):
     target_url = f"https://{os.environ['UNIFI_API_HOST']}/proxy/network/api/s/default/rest/portforward/{id}"
     
     try:
-        response = do_unifi_request("delete", target_url)
+        auth = unifi_api_logon()
+        response = do_unifi_request("delete", target_url, cookies=auth["cookies"], csrf_token=auth["csrf"])
         
         if not response.status_code == 200:
             raise ValueError(f"Status code is {str(response.status_code)} - {response.text}")
@@ -195,7 +198,7 @@ def supervise_ips():
         client = kube_auth()
         
         api = client.resources.get(api_version="v1", kind="Service")
-        items = api.get(namespace="prism-servers", label_selector="customer").items
+        items = api.get(namespace="prism-servers", label_selector="custObjUuid").items
         
         forwards = get_port_forward()["data"]
         
@@ -203,52 +206,84 @@ def supervise_ips():
             do_create = False
             do_delete = False
             
-            this_custObjUuid = item.metadata.labels.custObjUuid
-            this_customer = item.metadata.labels.customer
+            this_port = item.spec.ports[0].port
             this_prismserver_name = item.metadata.ownerReferences[0].name
+            
+            print(" ")
+            print(f"Iterating for: {this_prismserver_name}")
+            
+            # Generic status object
+            status_obj = {
+                "status": {
+                    "forwarding": {
+                        "available": True,
+                        "phase": None,
+                        "message": None,
+                        "port": this_port
+                    }
+                }
+            }
             
             # Only proceed if loadBalancer has assigned an IP
             if item.status.loadBalancer:
                 this_ip = item.status.loadBalancer.ingress[0].ip
-                this_port = item.spec.ports[0].port
+                print(f"> Has IP: {this_ip}")
                 
-                for forward in forwards:
-                    forward_id = forward["_id"]
-                    
-                    if forward["fwd"] == this_ip:
-                        if forward["fwd_port"] == this_port:
-                            print("Forward found and it is correct.")
-                        else:
-                            print(f"Correcting forward for {this_ip}...")
-                            do_delete = True
+                if len(forwards) >= 1:
+                    for forward in forwards:
+                        forward_id = forward["_id"]
+                        
+                        if forward["fwd"] == this_ip:
+                            if forward["fwd_port"] == this_port:
+                                print("> Forward found and it is correct.")
+                                
+                                # Do this, as otherwise a forwarding will be scheduled anyway if forwards{} has more than one item
+                                do_create = False
+                                break
                             
-                    else:
-                        print(f"No forward for {this_ip}...")
-                        do_create = True
-                
+                            else:
+                                print(f"> [i] Correcting forward for {this_ip}...")
+                                do_delete = True
+                                break
+                                
+                        else:
+                            # Forwarding is missing
+                            do_create = True
+
+                else:
+                    print(f"> [i] Forwardings were initially empty, creating...")
+                    do_create = True
+                    
+            else:
+                raise ValueError("Service does not yet have an external IP assigned.")
+            
             # (Re)create port forward
-            if do_delete or do_create:
-                try:
+            try:
+                if do_delete or do_create:
+                    do_status_update = True
                     print(f"> Creating forward for: {this_port} -> {this_ip}")
                     
                     if do_delete:
                         delete_port_forward(forward_id)
                         
-                    create_port_forward(this_ip, this_port)                
-                except Exception as e:
-                    print(f"> Error -> {str(e)}")
+                    create_port_forward(this_ip, this_port)
                     
-                    # Update status obj
-                    status_obj = {
-                        "status": {
-                            "forwarding": {
-                                "phase": "Unavailable",
-                                "reason": f"\"{str(e)}\""
-                            }
-                        }
-                    }
-                    
-                    print("Attempting patch...")
+                    status_obj["status"]["forwarding"]["available"] = True
+                    status_obj["status"]["forwarding"]["phase"] = "Forwarded"
+                    status_obj["status"]["forwarding"]["message"] = f"\"To IP {this_ip}\""
+                else:
+                    do_status_update = False
+                                
+            except Exception as e:
+                print(f"> Error -> {str(e)}")
+                
+                status_obj["status"]["forwarding"]["available"]  = False
+                status_obj["status"]["forwarding"]["phase"] = "Forwarding failed"
+                status_obj["status"]["forwarding"]["message"] = f"Operator error: \"{str(e)}\""
+            
+            finally:
+                # Update status obj
+                if do_status_update:
                     prismserver_api = client.resources.get(api_version="v1", kind="PrismServer")
                     prismserver_api.patch(
                         namespace="prism-servers",
@@ -256,29 +291,6 @@ def supervise_ips():
                         body=status_obj,
                         content_type="application/merge-patch+json"
                     )
-
-            else:
-                print("No external IP for this item.")
         
     except Exception as e:
         raise kopf.TemporaryError(f"FORWARDER: Error during supervision: {str(e)}")
-
-"""
-Sample request:
-    POST https://<ip>/proxy/network/api/s/default/rest/portforward
-    Auth header: Cookie: TOKEN=...
-    {
-        "name":  "csgo-server-GUID",
-        "enabled":  true,
-        "pfwd_interface":  "wan",
-        "src":  "any",
-        "dst_port":  "1234",
-        "fwd":  "<targetIp>",
-        "fwd_port":  "1234",
-        "proto":  "tcp_udp",
-        "log":  false
-    }
-    
-Delete route:
-    DELETE https://{{IP}}/proxy/network/api/s/default/rest/portforward/<forwardId>
-"""

@@ -52,7 +52,7 @@ def create_fn(spec, meta, logger, **kwargs):
 
     logger.info("PRISM server created.")
 
-    return {'server-name': obj.metadata.name, "customer-objects-uuid": obj.metadata.labels.custObjUuid ,'message': 'Successfully created', 'time': f"{str( int( time.time() ) )}"}
+    return {'deployment': obj.metadata.name, "customer-objects-uuid": obj.metadata.labels.custObjUuid ,'message': 'Successfully created', 'time': f"{str( int( time.time() ) )}"}
 
 #  ------------------------
 #         FUNCTIONS

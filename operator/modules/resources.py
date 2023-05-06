@@ -44,9 +44,9 @@ def get_resources(logger, name, namespace, customer, sub_start):
     
     try:
         resources = [
-            get_deployment_body(logger, str_uuid, name, namespace, customer, labels),
+            get_pvc_body(logger, str_uuid, name, namespace, customer, labels),
             get_service_body(logger, str_uuid, name, namespace, customer, labels),
-            get_pvc_body(logger, str_uuid, name, namespace, customer, labels)
+            get_deployment_body(logger, str_uuid, name, namespace, customer, labels)
         ]
     except Exception as e:
         raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")

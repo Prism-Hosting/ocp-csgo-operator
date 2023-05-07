@@ -21,8 +21,6 @@ spec:
         subscriptionStart: "{sub_start}"
         custObjUuid: "{str_uuid}"
     spec:
-      securityContext:
-        fsGroup: 1000
       containers:
         - name: "{full_name}"
           image: timche/csgo

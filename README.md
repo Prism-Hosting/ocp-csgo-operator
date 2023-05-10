@@ -50,6 +50,8 @@ To view an example of a `PrismServer` resource, look at the `test` folder in thi
 #### Quick testing
 
 ``` shell
+REPO=prismhosting
+
 docker build -t $REPO/ocp-csgo-operator:latest .
 docker image push $REPO/ocp-csgo-operator:latest
 

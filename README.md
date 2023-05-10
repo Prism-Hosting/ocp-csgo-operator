@@ -30,7 +30,29 @@ status:
     time: '1683220281'
 ```
 
-Every resource has the following labels:
+### Port forwarding
+The operator will automatically forward ports of `LoadBalancer` services once they've acquired an IP by the LB.  
+Whenever a port forwarding attempt is made, the `status` field of the `PrismServer object will be updated:
+```yaml
+  forwarding:
+    assignedIp: 172.16.5.2
+    available: true
+    message: '"To IP 172.16.5.2"'
+    phase: Forwarded
+    port: 30940
+```
+
+Where:
+ - `assignedIP`
+   - The *internal* IP that was assigned to the service by the LB.
+ - `available`
+   - If the UDM has the correct port forwarding established.
+ - `port`
+   - Port on which the service is externally accessible.
+
+## Labels
+Every resource created due to the operator obtains the following labels:
+
 ```yaml
 custObjUuid: 2de09f00-0ec9-4d33-993a-8b884173d199
 # UUID of the PrismServer object
@@ -45,11 +67,16 @@ subscriptionStart: '1683139792'
 # Start of the subscription
 ```
 
+**Note:** Once processed by the operator, the `PrismServer` resource will also obtain these labels.  
+The operator has a mechanism in place to ensure that specifically these labels are always present and have the same value(s) as all other child resources.
+
 To view an example of a `PrismServer` resource, look at the `test` folder in this repo.
 
 #### Quick testing
 
 ``` shell
+REPO=prismhosting
+
 docker build -t $REPO/ocp-csgo-operator:latest .
 docker image push $REPO/ocp-csgo-operator:latest
 

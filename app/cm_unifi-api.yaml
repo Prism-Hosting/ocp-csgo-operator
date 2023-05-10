@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unifi-api-env
+  namespace: prism-servers
+data:
+  unifi-api-host: "172.16.1.1"

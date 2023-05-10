@@ -2,7 +2,7 @@ FROM ubuntu:23.04
 
 # Environment
 RUN apt-get update && apt-get install \
-  -y --no-install-recommends python3 python3-virtualenv vim
+  -y --no-install-recommends curl dnsutils iputils-ping python3 python3-virtualenv vim
 
 ENV APP_ROOT=/opt
 ENV VIRTUAL_ENV=/opt/venv
@@ -22,4 +22,4 @@ USER 1001
 # Installation and exection
 WORKDIR ${APP_ROOT}
 RUN pip install --no-cache-dir -r requirements.txt
-CMD kopf run main.py --all-namespaces --verbose
+ENTRYPOINT ["./run.sh"]

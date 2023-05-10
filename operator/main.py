@@ -23,12 +23,11 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     logger.info("Operator startup succeeded!")
 
 @kopf.on.startup()
-async def supervisor_loop(spec, meta, logger, **kwargs):
+async def supervisor_loop(settings: None, logger, **kwargs):
     # Launch async supervisor routine
     while (True):
-        logger.info("Supervisor loop called.")
         forwarder.supervise_ips()
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
 
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create_fn(spec, meta, logger, **kwargs):

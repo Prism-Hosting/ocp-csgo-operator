@@ -16,7 +16,7 @@ def allocate_random_port():
     # TODO: Get current ports, generate port, return if non-existent or retry ad infinitum.
     return random.randint(20000, 50000)
 
-def get_resources(logger, name, namespace, customer, sub_start):
+def get_resources(logger, name, namespace, customer, sub_start, env_vars=None):
     """ Creates an array of kubernetes resources (Deployment, service) for further use
 
     Args:
@@ -46,14 +46,14 @@ def get_resources(logger, name, namespace, customer, sub_start):
         resources = [
             get_pvc_body(logger, str_uuid, name, namespace, customer, labels),
             get_service_body(logger, str_uuid, name, namespace, customer, labels),
-            get_deployment_body(logger, str_uuid, name, namespace, customer, labels)
+            get_deployment_body(logger, str_uuid, name, namespace, customer, labels, env_vars)
         ]
     except Exception as e:
         raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")
     
     return resources
 
-def get_deployment_body(logger, str_uuid, name, namespace, customer, labels):
+def get_deployment_body(logger, str_uuid, name, namespace, customer, labels, env_vars=None):
     """ return deployment resource body
 
     Args:
@@ -83,7 +83,8 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, labels):
                 customer=customer,
                 sub_start=labels["subscriptionStart"],
                 str_uuid=labels["custObjUuid"],
-                secret_name=secret_name
+                secret_name=secret_name,
+                env_vars=env_vars
             )
         )
         

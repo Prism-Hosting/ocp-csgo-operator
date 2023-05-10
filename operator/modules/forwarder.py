@@ -2,6 +2,7 @@
 Module to automatically forwards ports to CS:GO services on a UDM SE.
 """
 
+from openshift.dynamic import DynamicClient
 import kopf
 import kubernetes
 import os
@@ -9,10 +10,11 @@ import uuid
 import kopf
 import datetime
 import kubernetes
-from openshift.dynamic import DynamicClient
+import modules.utils as utils
 
 import requests
 import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 #  ------------------------
@@ -26,18 +28,6 @@ unifi_auth_data = {
 #  ------------------------
 #         FUNCTIONS
 #  ------------------------
-def kube_auth():
-    # Attempt logon
-    try:
-        kubernetes.config.load_incluster_config()
-        k8s_client = kubernetes.client.ApiClient()
-        dyn_client = DynamicClient(k8s_client)
-        
-        return dyn_client
-
-    except Exception as e:
-        raise kopf.PermanentError(f"Failed to create dynamic client: {str(e)}")
-
 def do_unifi_request(mode, target_url, json=None, cookies=None, csrf_token=None):
     """ Do a general web request, tailored to the Unifi API
 
@@ -223,7 +213,7 @@ def supervise_ips():
     """
     
     try:
-        client = kube_auth()
+        client = utils.kube_auth()
         
         api = client.resources.get(api_version="v1", kind="Service")
         items = api.get(namespace="prism-servers", label_selector="custObjUuid").items

@@ -26,14 +26,7 @@ spec:
           image: timche/csgo
           ports: 
             - containerPort: 27015
-          env:
-            - name: CSGO_GSLT
-              valueFrom: 
-                  secretKeyRef: 
-                      name: "{secret_name}"
-                      key: value
-            - name: SERVER_CONFIGS
-              value: "true"
+          env: {env_vars}
           volumeMounts:
             - mountPath: /home/csgo/server
               name: csgo-data

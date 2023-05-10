@@ -22,3 +22,21 @@ spec:
       - name: prismserver-operator
         image: prismhosting/ocp-csgo-operator:latest
         imagePullPolicy: Always
+        env:
+          - name: UNIFI_API_HOST
+            valueFrom:
+              configMapKeyRef:
+                key: unifi-api-host
+                name: unifi-api-env
+          - name: UNIFI_API_USER
+            valueFrom:
+              secretKeyRef:
+                key: user
+                name: unifi-api-credentials
+          - name: UNIFI_API_PASS
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: unifi-api-credentials
+          - name: ENV_NAMESPACE
+            value: prism-servers

@@ -5,7 +5,16 @@ metadata:
   namespace: prism-servers
 spec:
   customer: cust-01
-  # [string] Customer identifier
+  # [string] Customer identifier, required
 
   subscriptionStart: 1683139792
-  # [string] UNIX timestamp
+  # [string] UNIX timestamp, optional
+  #          If not specified, will be populated by the operator
+
+  env:
+    # [list] Environment variables, must be in the syntax as illustrated below
+    - name: GSLT_CODE
+      value: my_code
+    - name: SERVER_CONFIGS
+      value: "False"
+      # Bools must be string'd

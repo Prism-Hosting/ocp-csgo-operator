@@ -67,6 +67,9 @@ subscriptionStart: '1683139792'
 # Start of the subscription
 ```
 
+**Note:** Once processed by the operator, the `PrismServer` resource will also obtain these labels.  
+The operator has a mechanism in place to ensure that specifically these labels are always present and have the same value(s) as all other child resources.
+
 To view an example of a `PrismServer` resource, look at the `test` folder in this repo.
 
 #### Quick testing

@@ -91,10 +91,10 @@ def create_server(logger, name, namespace, customer, sub_start):
             # Owner reference
             kopf.adopt(body)
             
-            v1_server = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
+            resource = dyn_client.resources.get(api_version=body["apiVersion"], kind=body["kind"])
             
             logger.info(f"> Resource body: {body}")
-            return_object = v1_server.create(body=body, namespace=namespace)
+            return_object = resource.create(body=body, namespace=namespace)
     except Exception as e:
         raise kopf.PermanentError(f"Resource creation has failed: {str(e)}")
     

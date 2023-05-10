@@ -30,6 +30,26 @@ status:
     time: '1683220281'
 ```
 
+### Port forwarding
+The operator will automatically forward ports of `LoadBalancer` services once they've acquired an IP by the LB.  
+Whenever a port forwarding attempt is made, the `status` field of the `PrismServer object will be updated:
+```yaml
+  forwarding:
+    assignedIp: 172.16.5.2
+    available: true
+    message: '"To IP 172.16.5.2"'
+    phase: Forwarded
+    port: 30940
+```
+
+Whereas:
+ - `assignedIP`
+   - The *internal* IP that was assigned to the service by the LB.
+ - `available`
+   - If the UDM has the correct port forwarding established.
+ - `port`
+   - Port on which the service is externally accessible.
+
 Every resource has the following labels:
 ```yaml
 custObjUuid: 2de09f00-0ec9-4d33-993a-8b884173d199

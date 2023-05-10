@@ -12,8 +12,9 @@ spec:
   #          If not specified, will be populated by the operator
 
   env:
-    # [list] Environment variables, must be in the syntax like below
+    # [list] Environment variables, must be in the syntax as illustrated below
     - name: GSLT_CODE
       value: my_code
     - name: SERVER_CONFIGS
       value: "False"
+      # Bools must be string'd

@@ -7,12 +7,21 @@ import kubernetes
 import os
 import uuid
 import kopf
+import datetime
 import kubernetes
 from openshift.dynamic import DynamicClient
 
 import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+#  ------------------------
+#           VARS
+#  ------------------------
+unifi_auth_data = {
+    "data": None,
+    "expiry": None
+}
 
 #  ------------------------
 #         FUNCTIONS
@@ -68,11 +77,19 @@ def unifi_api_logon():
     Returns:
         dict = [ cookies: dict, csrf: string ]
     """
+    
     target_url = f"https://{os.environ['UNIFI_API_HOST']}/api/auth/login"
     auth_payload = {
         "username": os.environ['UNIFI_API_USER'],
         "password": os.environ['UNIFI_API_PASS']
     }
+    
+    # Only execute if auth has not yet expired
+    if unifi_auth_data["expiry"]:
+        now = datetime.datetime.now()
+        if now < unifi_auth_data["expiry"]:
+            # Not yet expired
+            return unifi_auth_data["data"]
     
     response = do_unifi_request("post", target_url, auth_payload)
     response.raise_for_status()
@@ -83,7 +100,10 @@ def unifi_api_logon():
         "csrf": response.headers["X-CSRF-TOKEN"]
     }
     
-    return returnObj
+    unifi_auth_data["data"] = returnObj
+    unifi_auth_data["expiry"] = datetime.datetime.now() + datetime.timedelta(hours=1)
+    
+    return unifi_auth_data["data"]
     
 def create_port_forward_body(target_ip, target_port):
     """ Create UDM SE/PRO port forwarding request body

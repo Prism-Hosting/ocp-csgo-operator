@@ -7,19 +7,28 @@ import time
 import logging
 import kopf
 import kubernetes
+import asyncio
 from openshift.dynamic import DynamicClient
-from modules.resources import *
+import modules.resources as resources
+import modules.forwarder as forwarder
 
 #  ------------------------
 #         HANDLERS
 #  ------------------------
-
 @kopf.on.startup()
 def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     settings.posting.level = logging.ERROR
     settings.persistence.finalizer = 'prism-server-operator.prism-hosting.ch/kopf-finalizer'
     
     logger.info("Operator startup succeeded!")
+
+@kopf.on.startup()
+async def supervisor_loop(spec, meta, logger, **kwargs):
+    # Launch async supervisor routine
+    while (True):
+        logger.info("Supervisor loop called.")
+        forwarder.supervise_ips()
+        await asyncio.sleep(3)
 
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create_fn(spec, meta, logger, **kwargs):
@@ -75,7 +84,7 @@ def create_server(logger, name, namespace, customer, sub_start):
 
     # Create the above schedule resource
     try:
-        bodies = get_resources(logger, name, namespace, customer, sub_start)
+        bodies = resources.get_resources(logger, name, namespace, customer, sub_start)
     
         logger.info(f"Resource gathering finished, creating resources...")
         for body in bodies:

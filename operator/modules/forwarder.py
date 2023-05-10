@@ -151,7 +151,7 @@ def create_port_forward(target_ip, target_port):
             raise ValueError(f"Status code is {str(response.status_code)} - {response.text}")
         
     except Exception as e:
-        raise ValueError(f"Failed: {str(e)}")
+        raise ValueError(f"create_port_forward() error: {str(e)}")
 
 def delete_port_forward(id):
     """ Delete UDM SE/PRO port forwarding rule
@@ -170,7 +170,7 @@ def delete_port_forward(id):
             raise ValueError(f"Status code is {str(response.status_code)} - {response.text}")
         
     except Exception as e:
-        print(f"Failed: {str(e)}")
+        print(f"delete_port_forward() Error: {str(e)}")
     
     
     return True
@@ -195,6 +195,23 @@ def get_port_forward():
         print(f"get_port_forward() failed: {str(e)}")
         
     return response.json()
+
+def delete_port_forward_by_ip(ip):
+    """ Deletes a port forwarding of a k8s service that was deleted.
+
+    Args:
+        ip (string): IP address the service used to have
+    """
+    
+    try:
+        forwards = (get_port_forward())["data"]
+        for forward in forwards:
+            if forward["fwd"] == ip:
+                forward_id = forward["_id"]
+                delete_port_forward(forward_id)
+        
+    except Exception as e:
+        raise kopf.TemporaryError(f"delete_port_forward_by_ip() error: {str(e)}")
 
 #  ------------------------
 #           LOGIC
@@ -295,6 +312,9 @@ def supervise_ips():
             finally:
                 # Update status obj
                 if do_status_update:
+                    if this_ip:
+                        status_obj["status"]["forwarding"]["assignedIp"] = this_ip
+                    
                     prismserver_api = client.resources.get(api_version="v1", kind="PrismServer")
                     prismserver_api.patch(
                         namespace="prism-servers",

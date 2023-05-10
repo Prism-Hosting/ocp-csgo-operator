@@ -42,7 +42,7 @@ Whenever a port forwarding attempt is made, the `status` field of the `PrismServ
     port: 30940
 ```
 
-Whereas:
+Where:
  - `assignedIP`
    - The *internal* IP that was assigned to the service by the LB.
  - `available`
@@ -50,7 +50,9 @@ Whereas:
  - `port`
    - Port on which the service is externally accessible.
 
-Every resource has the following labels:
+## Labels
+Every resource created due to the operator obtains the following labels:
+
 ```yaml
 custObjUuid: 2de09f00-0ec9-4d33-993a-8b884173d199
 # UUID of the PrismServer object

@@ -7,7 +7,7 @@ import time
 import logging
 import kopf
 import kubernetes
-import asyncio
+from threading import Thread
 from openshift.dynamic import DynamicClient
 import modules.resources as resources
 import modules.forwarder as forwarder
@@ -23,11 +23,9 @@ def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     logger.info("Operator startup succeeded!")
 
 @kopf.on.startup()
-async def supervisor_loop(settings: None, logger, **kwargs):
-    # Launch async supervisor routine
-    while (True):
-        forwarder.supervise_ips()
-        await asyncio.sleep(5)
+def launch_supervisor_loop(settings: None, logger, **kwargs):
+    thread = Thread(target=supervisor_loop)
+    thread.start()
 
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create_fn(spec, meta, logger, **kwargs):
@@ -62,9 +60,34 @@ def create_fn(spec, meta, logger, **kwargs):
 
     return {'deployment': obj.metadata.name, "customer-objects-uuid": obj.metadata.labels.custObjUuid ,'message': 'Successfully created', 'time': f"{str( int( time.time() ) )}"}
 
+@kopf.on.delete('prism-hosting.ch', 'v1', 'prismservers')
+def clean_port_forward(spec: None, meta: None, status, logger, **kwargs):
+    ip = "Unknown IP"
+    
+    try:
+        if status["forwarding"]["available"]:
+            if not status["forwarding"]["assignedIp"]:
+                return "No assignedIp yet"
+                
+            ip = status["forwarding"]["assignedIp"]
+            
+            logger.info(f"Triggering port forward deletion for: {ip}")
+            forwarder.delete_port_forward_by_ip(ip)        
+    except Exception as e:
+        raise kopf.PermanentError(f"clean_port_forward() error: {str(e)}")
+
 #  ------------------------
 #         FUNCTIONS
 #  ------------------------
+def supervisor_loop():
+    while (True):
+        try:
+            forwarder.supervise_ips()
+        except Exception as e:
+            print(f"supervisor_loop() error: {str(e)}")
+        
+        time.sleep(3)
+
 def create_server(logger, name, namespace, customer, sub_start):
     """
     Create the server

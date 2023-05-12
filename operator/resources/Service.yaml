@@ -21,5 +21,3 @@ spec:
     protocol: UDP
     targetPort: 27015
   type: LoadBalancer
-  externalIPs:
-    - "172.16.2.6"

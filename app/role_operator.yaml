@@ -22,3 +22,6 @@ rules:
 - apiGroups: [""]
   resources: [secrets]
   verbs: [get, list]
+- apiGroups: [prism-hosting.ch]
+  resources: [prismservers]
+  verbs: [get, list]

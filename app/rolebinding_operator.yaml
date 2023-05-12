@@ -4,9 +4,9 @@ metadata:
   name: prism-operator
   namespace: prism-servers
 subjects:
-- kind: User
+- kind: ServiceAccount
   name: sa-prism-operator
-- kind: User
+- kind: ServiceAccount
   name: sa-server-pod
 roleRef:
   kind: Role

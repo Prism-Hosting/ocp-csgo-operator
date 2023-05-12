@@ -1,0 +1,5 @@
+ServiceAccapiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-server-pod
+  namespace: prism-servers

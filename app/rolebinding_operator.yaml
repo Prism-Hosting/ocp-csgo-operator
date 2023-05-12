@@ -6,6 +6,8 @@ metadata:
 subjects:
 - kind: User
   name: sa-prism-operator
+- kind: User
+  name: sa-server-pod
 roleRef:
   kind: Role
   name: prism-operator

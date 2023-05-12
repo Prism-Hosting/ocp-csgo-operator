@@ -21,6 +21,7 @@ spec:
         subscriptionStart: "{sub_start}"
         custObjUuid: "{str_uuid}"
     spec:
+      serviceAccountName: sa-server-pod
       containers:
         - name: "{full_name}"
           image: timche/csgo

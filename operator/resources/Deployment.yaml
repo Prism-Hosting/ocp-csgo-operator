@@ -21,11 +21,11 @@ spec:
         subscriptionStart: "{sub_start}"
         custObjUuid: "{str_uuid}"
     spec:
-      securityContext:
-        fsGroup: 1000
       serviceAccountName: sa-server-pod
       containers:
         - name: "{full_name}"
+          securityContext:
+            fsGroup: 1000
           image: timche/csgo
           ports: 
             - containerPort: 27015

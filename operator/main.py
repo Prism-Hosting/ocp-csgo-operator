@@ -53,17 +53,6 @@ def create(spec, meta, logger, **kwargs):
     # Sanity checks
     if not customer:
         raise kopf.PermanentError(f"Must set spec.customer")
-    if not env_vars:
-        raise kopf.PermanentError(f"Must specify spec.env")
-    else:
-        # Check if at least GSLT_CODE was specified.
-        has_gslt = False
-        for var in env_vars:
-            if var["name"] == "GSLT_CODE":
-                has_gslt = True
-            
-        if not has_gslt:
-            raise kopf.PermanentError("spec.env must contain 'GSLT_CODE'")
     
     if not sub_start:
         logger.info(f"subscriptionStart not set, generating it instead. (Got {sub_start!r}).")

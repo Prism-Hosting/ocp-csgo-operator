@@ -227,8 +227,8 @@ def supervise_ips():
             this_port = item.spec.ports[0].port
             this_prismserver_name = item.metadata.ownerReferences[0].name
             
-            print(" ")
-            print(f"Iterating for: {this_prismserver_name}")
+            #print(" ")
+            #print(f"Iterating for: {this_prismserver_name}")
             
             # Generic status object
             status_obj = {
@@ -245,7 +245,7 @@ def supervise_ips():
             # Only proceed if loadBalancer has assigned an IP
             if item.status.loadBalancer:
                 this_ip = item.status.loadBalancer.ingress[0].ip
-                print(f"> Has IP: {this_ip}")
+                #print(f"> Has IP: {this_ip}")
                 
                 if len(forwards) >= 1:
                     for forward in forwards:
@@ -253,14 +253,14 @@ def supervise_ips():
                         
                         if forward["fwd"] == this_ip:
                             if forward["fwd_port"] == this_port:
-                                print("> Forward found and it is correct.")
+                                #print("> Forward found and it is correct.")
                                 
                                 # Do this, as otherwise a forwarding will be scheduled anyway if forwards{} has more than one item
                                 do_create = False
                                 break
                             
                             else:
-                                print(f"> [i] Correcting forward for {this_ip}...")
+                                #print(f"> [i] Correcting forward for {this_ip}...")
                                 do_delete = True
                                 break
                                 
@@ -269,7 +269,7 @@ def supervise_ips():
                             do_create = True
 
                 else:
-                    print(f"> [i] Forwardings were initially empty, creating...")
+                    #print(f"> [i] Forwardings were initially empty, creating...")
                     do_create = True
                     
             else:
@@ -279,7 +279,7 @@ def supervise_ips():
             try:
                 if do_delete or do_create:
                     do_status_update = True
-                    print(f"> Creating forward for: {this_port} -> {this_ip}")
+                    #print(f"> Creating forward for: {this_port} -> {this_ip}")
                     
                     if do_delete:
                         delete_port_forward(forward_id)

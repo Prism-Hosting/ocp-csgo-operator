@@ -13,7 +13,7 @@ spec:
 
   env:
     # [list] Environment variables, must be in the syntax as illustrated below
-    - name: GSLT_CODE
+    - name: CSGO_GSLT
       value: my_code
     - name: SERVER_CONFIGS
       value: "False"

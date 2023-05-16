@@ -22,10 +22,10 @@ spec:
         custObjUuid: "{str_uuid}"
     spec:
       serviceAccountName: sa-server-pod
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: "{full_name}"
-          securityContext:
-            fsGroup: 1000
           image: timche/csgo
           ports: 
             - containerPort: 27015

@@ -4,32 +4,43 @@ metadata:
   name: prismservers.prism-hosting.ch
 spec:
   group: prism-hosting.ch
-  scope: Namespaced
   names:
     plural: prismservers
     singular: prismserver
     kind: PrismServer
+    listKind: PrismServerList
+  scope: Namespaced
   versions:
-  - name: v1
-    served: true
-    storage: true
-    schema:
-      openAPIV3Schema:
-        type: object
-        properties:
-          spec:
-            type: object
-            x-kubernetes-preserve-unknown-fields: true
-            x-kubernetes-validations:
-              - rule: "self.subscriptionStart <= 1000000000 || self.subscriptionStart >= 2147483647"
-                message: "subscriptionStart is an invalid UNIX timestamp or not within an acceptable range."
-            properties:
-              customer:
-                type: string
-              subscriptionStart:
-                type: integer
-            required:
-              - customer
-          status:
-            type: object
-            x-kubernetes-preserve-unknown-fields: true
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - customer
+                - env
+              properties:
+                customer:
+                  type: string
+                env:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - value
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
+                subscriptionStart:
+                  type: integer
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true

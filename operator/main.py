@@ -11,6 +11,7 @@ from threading import Thread
 from openshift.dynamic import DynamicClient
 import modules.resources as resources
 import modules.forwarder as forwarder
+import modules.tcp_probe as probe
 import modules.utils as utils
 
 #  ------------------------
@@ -154,6 +155,44 @@ def label_guard(old, new, meta, logger, **_):
     except Exception as e:
         raise kopf.PermanentError(f"Label guard failed: {str(e)}")   
     
+#  ------------------------
+#          DAEMONS
+#  ------------------------
+@kopf.daemon('prism-hosting.ch', 'v1', 'prismservers')
+def monitor_service_port(stopped, meta, name, status, logger, **kwargs):
+    """ Continuosly monitor the readiness of a CS:GO service and update the PrismServer object. """
+    
+    while not stopped:
+        try:
+            this_custObjUuid = meta["labels"]["custObjUuid"]
+            
+            status_obj = {
+                "status": {
+                    "service": {
+                        "serverAvailable": None
+                    }
+                }
+            }
+            
+            # Test the service
+            try:
+                probe_verdict = probe.probe_service(this_custObjUuid)
+                
+            except Exception as e:  # Do not fatally exit, ensure that False is set
+                # Debug
+                logger.warn(f"Exception calling probe_service(): {str(e)}")      
+                probe_verdict = False
+            
+            status_obj["status"]["service"]["serviceAvailable"]: probe_verdict
+            
+            # Only patch status if not already as expected
+            if not "service" in status or not "serverAvailable" in status["service"] or status["service"]["serverAvailable"] != probe_verdict:
+                utils.patch_resource(name, status_obj)
+            
+        except Exception as e:
+            logger.warn(f"Exception: {str(e)}")          
+        
+        time.sleep(5)
 
 #  ------------------------
 #         FUNCTIONS

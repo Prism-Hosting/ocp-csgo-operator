@@ -20,11 +20,16 @@ spec:
           spec:
             type: object
             x-kubernetes-preserve-unknown-fields: true
+            x-kubernetes-validations:
+              - rule: "self.subscriptionStart <= 1000000000 || self.subscriptionStart >= 2147483647"
+                message: "subscriptionStart is an invalid UNIX timestamp or not within an acceptable range."
             properties:
               customer:
                 type: string
               subscriptionStart:
                 type: integer
+            required:
+              - customer
           status:
             type: object
             x-kubernetes-preserve-unknown-fields: true

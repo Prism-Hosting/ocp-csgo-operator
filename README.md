@@ -13,6 +13,7 @@ Once such a resource has been created, the operator will create the following:
 **Note:** It is possible for one customer to have multiple `PrismServer` objects as they all obtain a unique UUID shared among all its resources later on.
 
 The names of these resources is based on the name of the `PrismServer` object and, generally, follows this syntax:
+
 ```bash
 csgo-server-{name}-{customer}-{uuid-part}
 ```
@@ -21,37 +22,45 @@ csgo-server-{name}-{customer}-{uuid-part}
 Deleting it will also delete all other resources that were created thanks to it.
 
 If the creation of all these resources has successfully finished, the `status` field of the `PrismServer` object will be updated:
+
 ```yaml
 status:
-  create_fn:
-    customer-objects-uuid: 2de09f00-0ec9-4d33-993a-8b884173d199
+  create:
     message: Successfully created
-    server-name: service-csgo-server-prismserver-test-obj-cust-01-2de09f00
-    time: '1683220281'
+    time: '1684500522'
+    # Time when ALL resources were created
 ```
+
+**Note:** The `create` field will only be visible IF creation of all resources was successful.
 
 ### Port forwarding
 The operator will automatically forward ports of `LoadBalancer` services once they've acquired an IP by the LB.  
 Whenever a port forwarding attempt is made, the `status` field of the `PrismServer object will be updated:
+
 ```yaml
+status:
   forwarding:
-    assignedIp: 172.16.5.2
+    assignedIp: 172.16.2.101
+    # Public IP assigned by the LB.
+
     available: true
-    message: '"To IP 172.16.5.2"'
-    phase: Forwarded
-    port: 30940
+    # Forwarding established and set up correctly on the router.
+    
+    port: 47392
+    # Port on which the pod is publicy accessible at.
 ```
 
-Where:
- - `assignedIP`
-   - The *internal* IP that was assigned to the service by the LB.
- - `available`
-   - If the UDM has the correct port forwarding established.
- - `port`
-   - Port on which the service is externally accessible.
+### TCP Probe
+A TCP probe will perpetually monitor if the CS:GO server process has a responsive TCP socket, i.e. is running.  
+The readiness of the server will always be reflected in the `status` field as such:
+
+```yaml
+status:
+  tcpProbeResponding: true
+```
 
 ## Labels
-Every resource created due to the operator obtains the following labels:
+Every resource created due to the operator will obtain the following labels:
 
 ```yaml
 custObjUuid: 2de09f00-0ec9-4d33-993a-8b884173d199
@@ -68,11 +77,12 @@ subscriptionStart: '1683139792'
 ```
 
 **Note:** Once processed by the operator, the `PrismServer` resource will also obtain these labels.  
-The operator has a mechanism in place to ensure that specifically these labels are always present and have the same value(s) as all other child resources.
+The operator has a mechanism in place to ensure that specifically these labels are always present on the `PrismServer` resource and are immutable.
 
+## Example
 To view an example of a `PrismServer` resource, look at the `test` folder in this repo.
 
-#### Quick testing
+### Quick testing
 
 ``` shell
 REPO=prismhosting

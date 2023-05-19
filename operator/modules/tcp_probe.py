@@ -4,18 +4,12 @@ Module to probe TCP ports of CS:GO service objects
 
 from openshift.dynamic import DynamicClient
 import kopf
-import kubernetes
-import os
-import uuid
 import kopf
-import datetime
 import kubernetes
 import modules.utils as utils
 import socket
 
-import requests
 import urllib3
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 #  ------------------------

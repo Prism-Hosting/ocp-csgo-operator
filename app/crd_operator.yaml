@@ -44,10 +44,10 @@ spec:
                   maximum: 2147483647
               x-kubernetes-preserve-unknown-fields: true
               x-kubernetes-validations:
-                - rule: oldSelf.customer != self.customer
-                  message: Customer cannot be changed
-                - rule: oldSelf.subscriptionStart != self.subscriptionStart
-                  message: subscriptionStart cannot be changed
+                - rule: oldSelf.customer == self.customer
+                  message: Field 'customer' is immutable
+                - rule: oldSelf.subscriptionStart == self.subscriptionStart
+                  message: Field 'subscriptionStart' is immutable
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

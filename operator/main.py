@@ -133,9 +133,9 @@ def update_env(new, meta, logger, **_):
         deployments = api.get(namespace="prism-servers", label_selector=f"custObjUuid={this_custObjUuid}").items
         
         if len(deployments) <= 0:
-            raise kopf.TemporaryError(f"Found not deployments for custObjUuid: {this_custObjUuid}")
+            raise kopf.PermanentError(f"Found no deployments for custObjUuid: {this_custObjUuid}")
         if len(deployments) > 1:
-            raise kopf.TemporaryError(f"Found too many deployments for custObjUuid: {this_custObjUuid}")
+            raise kopf.PermanentError(f"Found too many deployments for custObjUuid: {this_custObjUuid}")
         
         # Existing deployment (meta)data
         deployment_name = deployments[0]["metadata"]["name"]
@@ -163,7 +163,7 @@ def update_env(new, meta, logger, **_):
 
 @kopf.on.field('prism-hosting.ch', 'v1', 'prismservers', field='metadata.labels')
 def label_guard(body, old, new, meta, logger, **_):
-    """Ensures that labels cannot get edited"""
+    """ Ensures that labels cannot get edited """
     
     expected_labels = [
         "custObjUuid",

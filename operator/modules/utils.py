@@ -18,14 +18,15 @@ def kube_auth():
     except Exception as e:
         raise kopf.PermanentError(f"Failed to create dynamic client: {str(e)}")
     
-def patch_resource(resource_name, body, kind="PrismServer", namespace="prism-servers"):
+def patch_resource(name, body, kind="PrismServer", namespace="prism-servers", content_type="application/merge-patch+json"):
     """ Patch a kubernetes resource, defaults to "PrismServer"
 
     Args:
-        resource_name (string): Name of the PrismServer resource (meta.name)
+        name (string): Name of the kubernetes resource (meta.name)
         body (dict): Body to patch resource with
-        kind (string): Target kind
-        namespace (string): Target namespace
+        kind (string): Resource kind
+        namespace (string): Namespace of the resource
+        content_type (string): Content type to use for patching operation
     """
     
     client = kube_auth()
@@ -33,9 +34,9 @@ def patch_resource(resource_name, body, kind="PrismServer", namespace="prism-ser
     prismserver_api = client.resources.get(api_version="v1", kind=kind)
     prismserver_api.patch(
         namespace=namespace,
-        name=resource_name,
+        name=name,
         body=body,
-        content_type="application/merge-patch+json"
+        content_type=content_type
     )
 
 def is_uuid(value):

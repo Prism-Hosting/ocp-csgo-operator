@@ -38,6 +38,9 @@ spec:
                         type: string
                       value:
                         type: string
+                  x-kubernetes-validations:
+                    - rule: "self.exists(e, e.name == 'CSGO_GSLT')"
+                      message: Must specify env var 'CSGO_GSLT
                 subscriptionStart:
                   type: integer
                   minimum: 0

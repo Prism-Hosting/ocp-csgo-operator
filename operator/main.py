@@ -141,20 +141,24 @@ def update_env(new, meta, logger, **_):
         deployment_name = deployments[0]["metadata"]["name"]
         containers = deployments[0]["spec"]["template"]["spec"]["containers"]
         
-        # Update env in existing containers object, this assumes len(containers) = 1
-        containers[0].env = new
-        
         patch_body = {
             "spec": {
                 "template": {
                     "spec": {
-                        "containers": containers
+                        "containers": [
+                            {
+                                # One cannot just dump var containers here, as six.py will have iteration errors otherwise.
+                                # As such, the patch body will be reassembled using cherry-picked fields
+                                "name": containers[0].name,
+                                "image": containers[0].image,
+                                "env": new
+                            }
+                        ]
                     }
                 }
             }
         }
         
-        logger.info(f"update_env() - New body: {patch_body}")
         utils.patch_resource(deployment_name, patch_body, kind="Deployment")
 
     except Exception as e:

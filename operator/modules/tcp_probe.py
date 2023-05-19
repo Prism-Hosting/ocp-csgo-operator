@@ -2,10 +2,8 @@
 Module to probe TCP ports of CS:GO service objects
 """
 
-from openshift.dynamic import DynamicClient
 import kopf
 import kopf
-import kubernetes
 import modules.utils as utils
 import socket
 

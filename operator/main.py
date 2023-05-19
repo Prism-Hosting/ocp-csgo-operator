@@ -6,7 +6,7 @@ Operator to create and manage CS:GO servers.
 import time
 import logging
 import kopf
-import kubernetes
+import traceback
 from threading import Thread
 from openshift.dynamic import DynamicClient
 import modules.resources as resources
@@ -24,6 +24,7 @@ prism_object_initial_label_cache = {}
 #  ------------------------
 #         HANDLERS
 #  ------------------------
+# --- STARTUP ---
 @kopf.on.startup()
 def start_up(settings: kopf.OperatorSettings, logger, **kwargs):
     settings.posting.level = logging.ERROR
@@ -36,6 +37,7 @@ def launch_supervisor_loop(settings: None, logger, **kwargs):
     thread = Thread(target=supervisor_loop)
     thread.start()
 
+# --- CREATE ---
 @kopf.on.create('prism-hosting.ch', 'v1', 'prismservers')
 def create(spec, meta, logger, **kwargs):
     """resource create handler"""
@@ -88,7 +90,7 @@ def create(spec, meta, logger, **kwargs):
         }
     }
     
-    logger.info(f"this_name: {this_name}")
+    # Update status
     utils.patch_resource(this_name, labels_body)
 
     return {
@@ -96,6 +98,7 @@ def create(spec, meta, logger, **kwargs):
         'time': f"{str( int( time.time() ) )}"
     }
 
+# --- DELETE ---
 @kopf.on.delete('prism-hosting.ch', 'v1', 'prismservers')
 def clean_port_forward(spec: None, meta: None, status, logger, **kwargs):
     """
@@ -116,8 +119,50 @@ def clean_port_forward(spec: None, meta: None, status, logger, **kwargs):
     except Exception as e:
         raise kopf.PermanentError(f"clean_port_forward() error: {str(e)}")
 
+# --- UPDATES ---
+@kopf.on.field('prism-hosting.ch', 'v1', 'prismservers', field='spec.env')
+def update_env(new, meta, logger, **_):
+    if not meta["labels"]["custObjUuid"]:
+        raise kopf.TemporaryError("Resource does not yet have custObjUuid labels.")
+    
+    this_custObjUuid = meta["labels"]["custObjUuid"]
+    
+    try:
+        client = utils.kube_auth()
+        api = client.resources.get(api_version="v1", kind="Deployment")
+        deployments = api.get(namespace="prism-servers", label_selector=f"custObjUuid={this_custObjUuid}").items
+        
+        if len(deployments) <= 0:
+            raise kopf.TemporaryError(f"Found not deployments for custObjUuid: {this_custObjUuid}")
+        if len(deployments) > 1:
+            raise kopf.TemporaryError(f"Found too many deployments for custObjUuid: {this_custObjUuid}")
+        
+        # Existing deployment (meta)data
+        deployment_name = deployments[0]["metadata"]["name"]
+        containers = deployments[0]["spec"]["template"]["spec"]["containers"]
+        
+        # Update env in existing containers object, this assumes len(containers) = 1
+        containers[0].env = new
+        
+        patch_body = {
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": containers
+                    }
+                }
+            }
+        }
+        
+        logger.info(f"update_env() - New body: {patch_body}")
+        utils.patch_resource(deployment_name, patch_body, kind="Deployment")
+
+    except Exception as e:
+        logger.warning(traceback.format_exc())
+        raise kopf.PermanentError(f"Could not update env vars: {str(e)}")
+
 @kopf.on.field('prism-hosting.ch', 'v1', 'prismservers', field='metadata.labels')
-def label_guard(old, new, meta, logger, **_):
+def label_guard(body, old, new, meta, logger, **_):
     """Ensures that labels cannot get edited"""
     
     expected_labels = [
@@ -138,6 +183,7 @@ def label_guard(old, new, meta, logger, **_):
             prism_object_initial_label_cache[this_name] = old
     
     try:
+        # Determine if certain labels changed
         patch_back = False
         if not all(label in new for label in expected_labels):
             logger.info("[i] Did not find expected labels for a PrismServer resource, patching back...")
@@ -147,57 +193,55 @@ def label_guard(old, new, meta, logger, **_):
         if len(mismatched_labels) > 0:
             logger.info(f"[i] Found NEW labels that are mismatched: {mismatched_labels}")
             patch_back = True
-            
+        
+        # Actually do patching
         if patch_back:
             body = {'metadata': {'labels': prism_object_initial_label_cache[this_name]}}
             utils.patch_resource(this_name, body)
+            kopf.warn(body, reason="LabelsImmutable", message="Certain labels may not be updated or removed.")
             
     except Exception as e:
         raise kopf.PermanentError(f"Label guard failed: {str(e)}")   
     
 #  ------------------------
-#          DAEMONS
+#          TIMERS
 #  ------------------------
-@kopf.daemon('prism-hosting.ch', 'v1', 'prismservers')
+@kopf.timer('prism-hosting.ch', 'v1', 'prismservers', interval=3.0, initial_delay=20)
 def monitor_service_port(stopped, meta, name, status, logger, **kwargs):
     """ Continuosly monitor the readiness of a CS:GO service and update the PrismServer object. """
     
-    while not stopped:
-        try:
-            this_custObjUuid = meta["labels"]["custObjUuid"]
-            
-            status_obj = {
-                "status": {
-                    "tcpProbeResponding": False
-                }
-            }
-            
-            # Test the service
-            try:
-                probe_verdict = probe.probe_service(this_custObjUuid)
-                
-            except Exception as e:  # Do not fatally exit, we want to ensure that status is False
-                # Debug
-                logger.warn(f"Exception calling probe_service(): {str(e)}")
-            
-            status_obj["status"]["tcpProbeResponding"]: probe_verdict
-            
-            # Only patch status if is not already as expected
-            if not "tcpProbeResponding" in status or status["tcpProbeResponding"] != probe_verdict:
-                utils.patch_resource(name, status_obj)
-            
-        except Exception as e:
-            logger.warn(f"Exception: {str(e)}")          
+    try:
+        this_custObjUuid = meta["labels"]["custObjUuid"]
         
-        time.sleep(5)
+        status_obj = {
+            "status": {
+                "tcpProbeResponding": False
+            }
+        }
+        
+        # Test the service
+        try:
+            probe_verdict = probe.probe_service(this_custObjUuid)
+            
+        except Exception as e:  # Do not fatally exit, we want to ensure that status is False
+            # Debug
+            logger.warn(f"Exception calling probe_service(): {str(e)}")
+        
+        status_obj["status"]["tcpProbeResponding"]: probe_verdict
+        
+        # Only patch status if is not already as expected
+        if not "tcpProbeResponding" in status or status["tcpProbeResponding"] != probe_verdict:
+            utils.patch_resource(name, status_obj)
+        
+    except Exception as e:
+        logger.warn(f"monitor_service_port(): {str(e)}")
 
 #  ------------------------
 #         FUNCTIONS
 #  ------------------------
 def supervisor_loop():
-    """
-    Port forwarder supervisor loop
-    """
+    """ Port forwarder supervisor loop """
+    
     while (True):
         try:
             forwarder.supervise_ips()
@@ -207,9 +251,7 @@ def supervisor_loop():
         time.sleep(3)
 
 def create_server(logger, name, namespace, customer, sub_start, env_vars=None):
-    """
-    Create the server
-    """
+    """ Create the server """
     
     logger.info(f"Creating a resource in {namespace}")
     

@@ -168,9 +168,7 @@ def monitor_service_port(stopped, meta, name, status, logger, **kwargs):
             
             status_obj = {
                 "status": {
-                    "service": {
-                        "serverAvailable": None
-                    }
+                    "tcpProbeResponding": False
                 }
             }
             
@@ -178,15 +176,14 @@ def monitor_service_port(stopped, meta, name, status, logger, **kwargs):
             try:
                 probe_verdict = probe.probe_service(this_custObjUuid)
                 
-            except Exception as e:  # Do not fatally exit, ensure that False is set
+            except Exception as e:  # Do not fatally exit, we want to ensure that status is False
                 # Debug
-                logger.warn(f"Exception calling probe_service(): {str(e)}")      
-                probe_verdict = False
+                logger.warn(f"Exception calling probe_service(): {str(e)}")
             
-            status_obj["status"]["service"]["serviceAvailable"]: probe_verdict
+            status_obj["status"]["tcpProbeResponding"]: probe_verdict
             
-            # Only patch status if not already as expected
-            if not "service" in status or not "serverAvailable" in status["service"] or status["service"]["serverAvailable"] != probe_verdict:
+            # Only patch status if is not already as expected
+            if not "tcpProbeResponding" in status or status["tcpProbeResponding"] != probe_verdict:
                 utils.patch_resource(name, status_obj)
             
         except Exception as e:

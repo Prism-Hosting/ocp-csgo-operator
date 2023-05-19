@@ -234,16 +234,15 @@ def supervise_ips():
             status_obj = {
                 "status": {
                     "forwarding": {
-                        "available": True,
+                        "available": None,
                         "phase": None,
-                        "message": None,
                         "port": this_port
                     }
                 }
             }
             
-            # Only proceed if loadBalancer has assigned an IP
-            if item.status.loadBalancer:
+            # Only proceed if LB has assigned an IP to service
+            if item.status.loadBalancer.ingress:
                 this_ip = item.status.loadBalancer.ingress[0].ip
                 #print(f"> Has IP: {this_ip}")
                 
@@ -273,7 +272,8 @@ def supervise_ips():
                     do_create = True
                     
             else:
-                raise ValueError("Service does not yet have an external IP assigned.")
+                #raise ValueError("Service does not yet have an external IP assigned.")
+                return False
             
             # (Re)create port forward
             try:
@@ -288,7 +288,6 @@ def supervise_ips():
                     
                     status_obj["status"]["forwarding"]["available"] = True
                     status_obj["status"]["forwarding"]["phase"] = "Forwarded"
-                    status_obj["status"]["forwarding"]["message"] = f"\"To IP {this_ip}\""
                 else:
                     do_status_update = False
                                 

@@ -272,7 +272,8 @@ def supervise_ips():
                     do_create = True
                     
             else:
-                raise ValueError("Service does not yet have an external IP assigned.")
+                #raise ValueError("Service does not yet have an external IP assigned.")
+                return False
             
             # (Re)create port forward
             try:

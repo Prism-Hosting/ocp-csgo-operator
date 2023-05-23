@@ -22,6 +22,10 @@ spec:
       - name: prismserver-operator
         image: prismhosting/ocp-csgo-operator:latest
         imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2G
         env:
           - name: UNIFI_API_HOST
             valueFrom:

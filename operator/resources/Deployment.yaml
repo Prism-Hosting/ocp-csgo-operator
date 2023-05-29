@@ -29,14 +29,14 @@ spec:
           image: timche/csgo
           ports: 
             - containerPort: 27015
-          env: {env_vars}
           volumeMounts:
             - mountPath: /home/csgo/server
               name: csgo-data
           resources:
-          limits:
-            cpu: "1"
-            memory: 2G
+            limits:
+              cpu: "1"
+              memory: 2G
+          env: {env_vars}
       volumes:
         - name: csgo-data
           persistentVolumeClaim:

@@ -126,6 +126,8 @@ def update_env(new, meta, logger, **_):
         raise kopf.TemporaryError("Resource does not yet have custObjUuid labels.")
     
     this_custObjUuid = meta["labels"]["custObjUuid"]
+    customer = meta["labels"]["customer"]
+    name = meta["name"]
     
     try:
         client = utils.kube_auth()
@@ -136,24 +138,16 @@ def update_env(new, meta, logger, **_):
             raise kopf.PermanentError(f"Found no deployments for custObjUuid: {this_custObjUuid}")
         if len(deployments) > 1:
             raise kopf.PermanentError(f"Found too many deployments for custObjUuid: {this_custObjUuid}")
-        
         # Existing deployment (meta)data
         deployment_name = deployments[0]["metadata"]["name"]
-        containers = deployments[0]["spec"]["template"]["spec"]["containers"]
+
+        deployment_body = resources.get_deployment_body(logger, this_custObjUuid, name, "prism-servers", customer, meta["labels"], env_vars=new)
         
         patch_body = {
             "spec": {
                 "template": {
                     "spec": {
-                        "containers": [
-                            {
-                                # One cannot just dump var containers here, as six.py will have iteration errors otherwise.
-                                # As such, the patch body will be reassembled using cherry-picked fields
-                                "name": containers[0].name,
-                                "image": containers[0].image,
-                                "env": new
-                            }
-                        ]
+                        "containers": deployment_body["spec"]["template"]["spec"]["containers"]
                     }
                 }
             }

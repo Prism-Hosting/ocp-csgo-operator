@@ -36,5 +36,6 @@ spec:
       volumes:
         - name: csgo-data
           persistentVolumeClaim:
-            claimName: "pvc-{full_name}"
+            claimName: "csgo-base"
+            readOnly: true
 

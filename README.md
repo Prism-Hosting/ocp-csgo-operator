@@ -8,7 +8,6 @@ Optionally, a UNIX timestamp can be inserted into the `.spec.subscriptionStart` 
 Once such a resource has been created, the operator will create the following:
 - Deployment
 - Service
-- PersistentVolumeClaim
 
 **Note:** It is possible for one customer to have multiple `PrismServer` objects as they all obtain a unique UUID shared among all its resources later on.
 

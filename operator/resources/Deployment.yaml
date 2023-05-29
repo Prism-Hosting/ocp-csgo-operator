@@ -33,8 +33,13 @@ spec:
           volumeMounts:
             - mountPath: /home/csgo/server
               name: csgo-data
+          resources:
+          limits:
+            cpu: "1"
+            memory: 2G
       volumes:
         - name: csgo-data
           persistentVolumeClaim:
-            claimName: "pvc-{full_name}"
+            claimName: "csgo-base"
+            readOnly: true
 

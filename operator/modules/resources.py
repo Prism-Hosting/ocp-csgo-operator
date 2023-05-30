@@ -71,6 +71,8 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, port, label
         labels (dict): Labels
     """
     
+    
+    
     uuid_part = str_uuid[:8]
     
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"

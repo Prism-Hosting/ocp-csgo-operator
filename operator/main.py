@@ -122,8 +122,14 @@ def clean_port_forward(spec: None, meta: None, status, logger, **kwargs):
 # --- UPDATES ---
 @kopf.on.field('prism-hosting.ch', 'v1', 'prismservers', field='spec.env')
 def update_env(new, meta, logger, **_):
-    if not meta["labels"]["custObjUuid"]:
-        raise kopf.TemporaryError("Resource does not yet have custObjUuid labels.")
+    # Check if resource was just created by checking its labels, ignore if so
+    if meta["labels"]:
+        if not meta["labels"]["custObjUuid"]:
+            logger.info("> No custObjUuid label yet, ignoring...")
+            return
+    else:
+        logger.info("> No labels yet, ignoring...")
+        return
     
     this_custObjUuid = meta["labels"]["custObjUuid"]
     customer = meta["labels"]["customer"]
@@ -142,10 +148,17 @@ def update_env(new, meta, logger, **_):
         if len(deployments) > 1:
             raise kopf.PermanentError(f"Found too many deployments for custObjUuid: {this_custObjUuid}")
         # Existing deployment (meta)data
+        
         deployment_name = deployments[0]["metadata"]["name"]
         port = services[0].spec.ports[0].port
 
-        deployment_body = resources.get_deployment_body(logger, this_custObjUuid, name, "prism-servers", customer, port, meta["labels"], env_vars=new)
+        # Dummy labels, not actually required but expected by get_deployment_body()
+        dummy_labels = {
+            "custObjUuid": "dummy",
+            "subscriptionStart": "dummy",
+        }
+
+        deployment_body = resources.get_deployment_body(logger, this_custObjUuid, name, "prism-servers", customer, port, labels=dummy_labels, env_vars=new)
         
         patch_body = {
             "spec": {

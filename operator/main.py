@@ -133,6 +133,9 @@ def update_env(new, meta, logger, **_):
         client = utils.kube_auth()
         api = client.resources.get(api_version="v1", kind="Deployment")
         deployments = api.get(namespace="prism-servers", label_selector=f"custObjUuid={this_custObjUuid}").items
+
+        api = client.resources.get(api_version="v1", kind="Service")
+        services = api.get(namespace="prism-servers", label_selector=f"custObjUuid={this_custObjUuid}").items
         
         if len(deployments) <= 0:
             raise kopf.PermanentError(f"Found no deployments for custObjUuid: {this_custObjUuid}")
@@ -140,8 +143,9 @@ def update_env(new, meta, logger, **_):
             raise kopf.PermanentError(f"Found too many deployments for custObjUuid: {this_custObjUuid}")
         # Existing deployment (meta)data
         deployment_name = deployments[0]["metadata"]["name"]
+        port = services[0].spec.ports[0].port
 
-        deployment_body = resources.get_deployment_body(logger, this_custObjUuid, name, "prism-servers", customer, meta["labels"], env_vars=new)
+        deployment_body = resources.get_deployment_body(logger, this_custObjUuid, name, "prism-servers", customer, port, meta["labels"], env_vars=new)
         
         patch_body = {
             "spec": {

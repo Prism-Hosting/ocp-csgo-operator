@@ -28,7 +28,10 @@ spec:
         - name: "{full_name}"
           image: timche/csgo
           ports: 
-            - containerPort: 27015
+            - containerPort: {dyn_port}
+              protocol: TCP
+            - containerPort: {dyn_port}
+              protocol: UDP
           volumeMounts:
             - mountPath: /home/csgo/server
               name: csgo-data

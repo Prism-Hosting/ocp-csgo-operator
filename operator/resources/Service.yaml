@@ -15,9 +15,9 @@ spec:
   - port: {dyn_port}
     name: csgo-tcp
     protocol: TCP
-    targetPort: 27015
+    targetPort: {dyn_port}
   - port: {dyn_port}
     name: csgo-udp
     protocol: UDP
-    targetPort: 27015
+    targetPort: {dyn_port}
   type: LoadBalancer

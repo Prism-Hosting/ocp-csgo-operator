@@ -8,6 +8,12 @@ import uuid
 import kopf
 import os
 
+def add_port_to_env_vars(env_vars, port):
+    """
+    Adds a dict with { "name": "CSGO_PORT", "value": port} to the env vars.
+    """
+    return env_vars + [{"name": "CSGO_PORT", "value": str(port)}]
+
 def allocate_random_port():
     """
     Allocate a random port to be used by a k8s service
@@ -43,16 +49,17 @@ def get_resources(logger, name, namespace, customer, sub_start, env_vars=None):
     }
     
     try:
+        port = allocate_random_port()
         resources = [
-            get_service_body(logger, str_uuid, name, namespace, customer, labels),
-            get_deployment_body(logger, str_uuid, name, namespace, customer, labels, env_vars)
+            get_service_body(logger, str_uuid, name, namespace, customer, port, labels),
+            get_deployment_body(logger, str_uuid, name, namespace, customer, port, labels, env_vars)
         ]
     except Exception as e:
         raise kopf.PermanentError(f"Was unable to generate all resources: {str(e)}")
     
     return resources
 
-def get_deployment_body(logger, str_uuid, name, namespace, customer, labels, env_vars=None):
+def get_deployment_body(logger, str_uuid, name, namespace, customer, port, labels, env_vars=None):
     """ return deployment resource body
 
     Args:
@@ -83,7 +90,8 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, labels, env
                 sub_start=labels["subscriptionStart"],
                 str_uuid=labels["custObjUuid"],
                 secret_name=secret_name,
-                env_vars=env_vars
+                dyn_port=port,
+                env_vars=add_port_to_env_vars(env_vars, port),
             )
         )
         
@@ -93,7 +101,7 @@ def get_deployment_body(logger, str_uuid, name, namespace, customer, labels, env
     
     return body
 
-def get_service_body(logger, str_uuid, name, namespace, customer, labels):
+def get_service_body(logger, str_uuid, name, namespace, customer, port, labels):
     """ Generate service resource
 
     Args:
@@ -108,8 +116,6 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
     full_name = f"csgo-server-{name}-{customer}-{uuid_part}"
     full_name = f"service-{full_name}"
     
-    dyn_port = str(allocate_random_port())
-    
     try:
         logger.info("Attempting to load service yaml...")
         path = os.path.join(os.path.dirname("resources/"), 'Service.yaml')
@@ -122,7 +128,7 @@ def get_service_body(logger, str_uuid, name, namespace, customer, labels):
                 sub_start=labels["subscriptionStart"],
                 str_uuid=labels["custObjUuid"],
                 namespace=namespace,
-                dyn_port=dyn_port,
+                dyn_port=port,
             )
         )
         

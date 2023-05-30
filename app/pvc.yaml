@@ -5,7 +5,9 @@ metadata:
   namespace: prism-servers
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
-      storage: 35Gi
+      storage: 40G
+  storageClassName: ""
+  volumeName: nfs-csgo-pv

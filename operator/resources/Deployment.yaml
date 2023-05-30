@@ -44,5 +44,4 @@ spec:
         - name: csgo-data
           persistentVolumeClaim:
             claimName: "csgo-base"
-            readOnly: true
 

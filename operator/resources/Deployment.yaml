@@ -39,6 +39,9 @@ spec:
             limits:
               cpu: "1"
               memory: 2G
+            requests:
+              cpu: "200m"
+              memory: 250M
           env: {env_vars}
       volumes:
         - name: csgo-data
